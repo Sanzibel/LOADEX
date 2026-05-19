@@ -64,7 +64,7 @@ const execMany = async (statements) => {
   const sql = getClient();
 
   for (const statement of statements) {
-    await sql(statement);
+    await sql.query(statement);
   }
 };
 
@@ -134,7 +134,7 @@ const initDB = async () => {
       process.env.SEED_ADMIN_NAME || "LOADEX Admin";
 
     const existingAdmin =
-      await sql(
+      await sql.query(
         "SELECT id FROM loadex_users_v1 WHERE email = $1",
         [adminEmail]
       );
@@ -143,7 +143,7 @@ const initDB = async () => {
       const hashedPassword =
         await bcrypt.hash(adminPassword, 10);
 
-      await sql(
+      await sql.query(
         `
           INSERT INTO loadex_users_v1 (name, email, password, role)
           VALUES ($1, $2, $3, 'admin')
@@ -153,11 +153,11 @@ const initDB = async () => {
     }
 
     const productCount =
-      await sql("SELECT COUNT(*)::int AS count FROM loadex_products");
+      await sql.query("SELECT COUNT(*)::int AS count FROM loadex_products");
 
     if ((productCount[0]?.count || 0) === 0) {
       for (const product of defaultProducts) {
-        await sql(
+        await sql.query(
           `
             INSERT INTO loadex_products (name, description, price, image)
             VALUES ($1, $2, $3, $4)
@@ -179,7 +179,7 @@ const initDB = async () => {
 const query = async (statement, params = []) => {
   await initDB();
   const sql = getClient();
-  return sql(statement, params);
+  return sql.query(statement, params);
 };
 
 module.exports = {
