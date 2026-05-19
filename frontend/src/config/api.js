@@ -1,5 +1,8 @@
 export const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5050";
+  process.env.REACT_APP_API_URL ||
+  (process.env.NODE_ENV === "production"
+    ? ""
+    : "http://localhost:5050");
 
 export const apiUrl = (path) =>
   `${API_BASE_URL}${path}`;
@@ -7,6 +10,14 @@ export const apiUrl = (path) =>
 export const imageUrl = (image) => {
   if (!image) {
     return "";
+  }
+
+  if (
+    image.startsWith("data:") ||
+    image.startsWith("http://") ||
+    image.startsWith("https://")
+  ) {
+    return image;
   }
 
   if (image.includes("uploads")) {

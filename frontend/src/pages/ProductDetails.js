@@ -73,6 +73,9 @@ const ProductDetails = () => {
 
     // 🔥 uploaded image
     if (
+      image.startsWith("data:") ||
+      image.startsWith("http://") ||
+      image.startsWith("https://") ||
       image.includes("/uploads/")
     ) {
 

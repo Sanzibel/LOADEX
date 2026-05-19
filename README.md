@@ -65,17 +65,43 @@ Open:
 http://localhost:3000
 ```
 
+## Deployment Notes
+
+The `vercel-deploy` branch is prepared to deploy the frontend and backend together on Vercel, with Neon Postgres as the online database.
+
+Vercel project settings:
+
+```txt
+Root Directory: LOADEX repository root
+Build Command: npm run build
+Output Directory: frontend/build
+Install Command: npm install
+```
+
+Vercel environment variables:
+
+```txt
+DATABASE_URL=your_neon_postgres_connection_string
+JWT_SECRET=replace_with_a_long_random_secret
+SEED_ADMIN_EMAIL=tungsahur@email.com
+SEED_ADMIN_PASSWORD=Admin1234
+SEED_ADMIN_NAME=LOADEX Admin
+```
+
+For a same-domain Vercel deployment, `REACT_APP_API_URL` can be left unset. The frontend will call `/api/...` on the deployed Vercel domain.
+
+On first API request, the backend creates the required Neon tables and seeds the default admin account and sample products if they do not exist yet.
+
 ## Environment Variables
 
 Backend `.env`:
 
 ```txt
-DB_USER=your_sql_server_user
-DB_PASSWORD=your_sql_server_password
-DB_SERVER=your_sql_server_host
-DB_NAME=your_database_name
-DB_PORT=1433
+DATABASE_URL=your_neon_postgres_connection_string
 JWT_SECRET=replace_with_a_long_random_secret
+SEED_ADMIN_EMAIL=tungsahur@email.com
+SEED_ADMIN_PASSWORD=Admin1234
+SEED_ADMIN_NAME=LOADEX Admin
 ```
 
 Frontend `.env`:

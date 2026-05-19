@@ -1,4 +1,4 @@
-const { sql } = require("../config/db");
+const db = require("../config/db");
 
 const VALID_STATUSES = [
   "Pending",
@@ -13,14 +13,9 @@ const validateShipping = (shipping) => {
     return "Missing shipping details";
   }
 
-  const name =
-    String(shipping.name || "").trim();
-
-  const phone =
-    String(shipping.phone || "").trim();
-
-  const address =
-    String(shipping.address || "").trim();
+  const name = String(shipping.name || "").trim();
+  const phone = String(shipping.phone || "").trim();
+  const address = String(shipping.address || "").trim();
 
   if (name.length < 2) {
     return "Shipping name must be at least 2 characters";
@@ -48,8 +43,7 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    const shippingError =
-      validateShipping(shipping);
+    const shippingError = validateShipping(shipping);
 
     if (shippingError) {
       return res.status(400).json({
@@ -58,7 +52,11 @@ exports.createOrder = async (req, res) => {
     }
 
     const invalidItem = items.find(
-      (item) => !item.id || !item.name || Number(item.price) <= 0 || Number(item.qty) <= 0
+      (item) =>
+        !item.id ||
+        !item.name ||
+        Number(item.price) <= 0 ||
+        Number(item.qty) <= 0
     );
 
     if (invalidItem) {
@@ -78,19 +76,8 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    const pool = await sql.connect();
-
-    const orderResult = await pool
-      .request()
-      .input("user_id", sql.Int, userId)
-      .input("total", sql.Decimal(10, 2), calculatedTotal)
-      .input("name", sql.NVarChar, String(shipping.name).trim())
-      .input("phone", sql.NVarChar, String(shipping.phone).trim())
-      .input("address", sql.NVarChar, String(shipping.address).trim())
-      .input("city", sql.NVarChar, String(shipping.city || "").trim())
-      .input("postal", sql.NVarChar, String(shipping.postal || "").trim())
-      .input("status", sql.NVarChar, "Pending")
-      .query(`
+    const orderResult = await db.query(
+      `
         INSERT INTO orders (
           user_id,
           total,
@@ -101,30 +88,25 @@ exports.createOrder = async (req, res) => {
           postal,
           status
         )
-        OUTPUT INSERTED.id
-        VALUES (
-          @user_id,
-          @total,
-          @name,
-          @phone,
-          @address,
-          @city,
-          @postal,
-          @status
-        )
-      `);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Pending')
+        RETURNING id
+      `,
+      [
+        userId,
+        calculatedTotal,
+        String(shipping.name).trim(),
+        String(shipping.phone).trim(),
+        String(shipping.address).trim(),
+        String(shipping.city || "").trim(),
+        String(shipping.postal || "").trim(),
+      ]
+    );
 
-    const orderId = orderResult.recordset[0].id;
+    const orderId = orderResult[0].id;
 
     for (const item of items) {
-      await pool
-        .request()
-        .input("order_id", sql.Int, orderId)
-        .input("product_id", sql.Int, item.id)
-        .input("name", sql.NVarChar, item.name)
-        .input("price", sql.Decimal(10, 2), Number(item.price))
-        .input("qty", sql.Int, Number(item.qty))
-        .query(`
+      await db.query(
+        `
           INSERT INTO order_items (
             order_id,
             product_id,
@@ -132,14 +114,16 @@ exports.createOrder = async (req, res) => {
             price,
             qty
           )
-          VALUES (
-            @order_id,
-            @product_id,
-            @name,
-            @price,
-            @qty
-          )
-        `);
+          VALUES ($1, $2, $3, $4, $5)
+        `,
+        [
+          orderId,
+          item.id,
+          item.name,
+          Number(item.price),
+          Number(item.qty),
+        ]
+      );
     }
 
     res.status(201).json({
@@ -147,7 +131,6 @@ exports.createOrder = async (req, res) => {
       message: "Order placed successfully",
       orderId,
     });
-
   } catch (err) {
     console.error("CREATE ORDER ERROR:", err);
 
@@ -161,20 +144,18 @@ exports.createOrder = async (req, res) => {
 exports.getMyOrders = async (req, res) => {
   try {
     const userId = req.user.id;
-    const pool = await sql.connect();
 
-    const result = await pool
-      .request()
-      .input("user_id", sql.Int, userId)
-      .query(`
+    const result = await db.query(
+      `
         SELECT *
         FROM orders
-        WHERE user_id = @user_id
+        WHERE user_id = $1
         ORDER BY created_at DESC
-      `);
+      `,
+      [userId]
+    );
 
-    res.json(result.recordset);
-
+    res.json(result);
   } catch (err) {
     console.error("GET MY ORDERS ERROR:", err);
 
@@ -188,20 +169,18 @@ exports.getMyOrderDetails = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const pool = await sql.connect();
 
-    const orderResult = await pool
-      .request()
-      .input("id", sql.Int, id)
-      .input("user_id", sql.Int, userId)
-      .query(`
+    const orderResult = await db.query(
+      `
         SELECT *
         FROM orders
-        WHERE id = @id
-          AND user_id = @user_id
-      `);
+        WHERE id = $1
+          AND user_id = $2
+      `,
+      [id, userId]
+    );
 
-    const order = orderResult.recordset[0];
+    const order = orderResult[0];
 
     if (!order) {
       return res.status(404).json({
@@ -209,10 +188,8 @@ exports.getMyOrderDetails = async (req, res) => {
       });
     }
 
-    const itemResult = await pool
-      .request()
-      .input("order_id", sql.Int, id)
-      .query(`
+    const items = await db.query(
+      `
         SELECT
           id,
           product_id,
@@ -220,15 +197,16 @@ exports.getMyOrderDetails = async (req, res) => {
           price,
           qty
         FROM order_items
-        WHERE order_id = @order_id
+        WHERE order_id = $1
         ORDER BY id
-      `);
+      `,
+      [id]
+    );
 
     res.json({
       order,
-      items: itemResult.recordset,
+      items,
     });
-
   } catch (err) {
     console.error("GET MY ORDER DETAILS ERROR:", err);
 
@@ -242,20 +220,18 @@ exports.cancelMyOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const pool = await sql.connect();
 
-    const orderResult = await pool
-      .request()
-      .input("id", sql.Int, id)
-      .input("user_id", sql.Int, userId)
-      .query(`
+    const orderResult = await db.query(
+      `
         SELECT id, status
         FROM orders
-        WHERE id = @id
-          AND user_id = @user_id
-      `);
+        WHERE id = $1
+          AND user_id = $2
+      `,
+      [id, userId]
+    );
 
-    const order = orderResult.recordset[0];
+    const order = orderResult[0];
 
     if (!order) {
       return res.status(404).json({
@@ -269,20 +245,18 @@ exports.cancelMyOrder = async (req, res) => {
       });
     }
 
-    await pool
-      .request()
-      .input("id", sql.Int, id)
-      .input("status", sql.NVarChar, "Cancelled")
-      .query(`
+    await db.query(
+      `
         UPDATE orders
-        SET status = @status
-        WHERE id = @id
-      `);
+        SET status = 'Cancelled'
+        WHERE id = $1
+      `,
+      [id]
+    );
 
     res.json({
       message: "Order cancelled",
     });
-
   } catch (err) {
     console.error("CANCEL MY ORDER ERROR:", err);
 
@@ -294,18 +268,13 @@ exports.cancelMyOrder = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const pool = await sql.connect();
+    const result = await db.query(`
+      SELECT *
+      FROM orders
+      ORDER BY created_at DESC
+    `);
 
-    const result = await pool
-      .request()
-      .query(`
-        SELECT *
-        FROM orders
-        ORDER BY created_at DESC
-      `);
-
-    res.json(result.recordset);
-
+    res.json(result);
   } catch (err) {
     console.error("GET ALL ORDERS ERROR:", err);
 
@@ -317,20 +286,15 @@ exports.getAllOrders = async (req, res) => {
 
 exports.getAdminStats = async (req, res) => {
   try {
-    const pool = await sql.connect();
+    const result = await db.query(`
+      SELECT
+        (SELECT COUNT(*)::int FROM loadex_products) AS "totalProducts",
+        (SELECT COUNT(*)::int FROM orders) AS "totalOrders",
+        (SELECT COUNT(*)::int FROM orders WHERE status = 'Pending') AS "pendingOrders",
+        (SELECT COUNT(*)::int FROM loadex_users_v1) AS "totalUsers"
+    `);
 
-    const result = await pool
-      .request()
-      .query(`
-        SELECT
-          (SELECT COUNT(*) FROM loadex_products) AS totalProducts,
-          (SELECT COUNT(*) FROM orders) AS totalOrders,
-          (SELECT COUNT(*) FROM orders WHERE status = 'Pending') AS pendingOrders,
-          (SELECT COUNT(*) FROM loadex_users_v1) AS totalUsers
-      `);
-
-    res.json(result.recordset[0]);
-
+    res.json(result[0]);
   } catch (err) {
     console.error("GET ADMIN STATS ERROR:", err);
 
@@ -343,18 +307,17 @@ exports.getAdminStats = async (req, res) => {
 exports.getOrderDetails = async (req, res) => {
   try {
     const { id } = req.params;
-    const pool = await sql.connect();
 
-    const orderResult = await pool
-      .request()
-      .input("id", sql.Int, id)
-      .query(`
+    const orderResult = await db.query(
+      `
         SELECT *
         FROM orders
-        WHERE id = @id
-      `);
+        WHERE id = $1
+      `,
+      [id]
+    );
 
-    const order = orderResult.recordset[0];
+    const order = orderResult[0];
 
     if (!order) {
       return res.status(404).json({
@@ -362,10 +325,8 @@ exports.getOrderDetails = async (req, res) => {
       });
     }
 
-    const itemResult = await pool
-      .request()
-      .input("order_id", sql.Int, id)
-      .query(`
+    const items = await db.query(
+      `
         SELECT
           id,
           product_id,
@@ -373,15 +334,16 @@ exports.getOrderDetails = async (req, res) => {
           price,
           qty
         FROM order_items
-        WHERE order_id = @order_id
+        WHERE order_id = $1
         ORDER BY id
-      `);
+      `,
+      [id]
+    );
 
     res.json({
       order,
-      items: itemResult.recordset,
+      items,
     });
-
   } catch (err) {
     console.error("GET ORDER DETAILS ERROR:", err);
 
@@ -402,19 +364,17 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
-    const pool = await sql.connect();
-
-    const result = await pool
-      .request()
-      .input("id", sql.Int, id)
-      .input("status", sql.NVarChar, status)
-      .query(`
+    const result = await db.query(
+      `
         UPDATE orders
-        SET status = @status
-        WHERE id = @id
-      `);
+        SET status = $1
+        WHERE id = $2
+        RETURNING id
+      `,
+      [status, id]
+    );
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.length === 0) {
       return res.status(404).json({
         message: "Order not found",
       });
@@ -423,7 +383,6 @@ exports.updateOrderStatus = async (req, res) => {
     res.json({
       message: "Status updated",
     });
-
   } catch (err) {
     console.error("UPDATE STATUS ERROR:", err);
 

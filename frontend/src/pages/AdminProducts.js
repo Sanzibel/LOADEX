@@ -110,7 +110,12 @@ const AdminProducts = () => {
       return "";
     }
 
-    if (image.includes("uploads")) {
+    if (
+      image.startsWith("data:") ||
+      image.startsWith("http://") ||
+      image.startsWith("https://") ||
+      image.includes("uploads")
+    ) {
       return imageUrl(image);
     }
 
