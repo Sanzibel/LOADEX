@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+build/
+dist/
+.vercel/
+
+# environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# runtime uploads
+backend/uploads/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

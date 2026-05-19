@@ -1,0 +1,171 @@
+body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background: radial-gradient(circle at top, #05070f, #000000 70%);
+  color: white;
+
+  /* 🔥 FIX: allow scrolling */
+  overflow-y: auto;
+}
+
+/* MAIN LAYOUT */
+.app-container {
+  /* 🔥 FIX: allow content to grow */
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+}
+
+.logo {
+  font-size: 60px;
+  letter-spacing: 6px;
+  background: linear-gradient(90deg, #00ffff, #8a2be2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+.tagline {
+  font-size: 13px;
+  color: #aaa;
+  letter-spacing: 2px;
+  margin-top: 5px;
+}
+
+/* CARD */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card {
+  background: rgba(15, 15, 30, 0.9);
+  border: 1px solid #00ffff33;
+  padding: 40px;
+  border-radius: 12px;
+  width: 320px;
+  box-shadow: 0 0 20px #00ffff33;
+}
+
+/* TITLE */
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #00ffff;
+  text-shadow: 0 0 10px #00ffff;
+}
+
+/* INPUTS */
+.input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  background: #0a0f1c;
+  border: 1px solid #00ffff55;
+  color: white;
+  border-radius: 5px;
+}
+
+/* BUTTON */
+.button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  background: #00ffff;
+  border: none;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 5px;
+  box-shadow: 0 0 10px #00ffff;
+  transition: 0.3s;
+}
+
+.button:hover {
+  background: #00cccc;
+  box-shadow: 0 0 20px #00ffff;
+}
+
+/* TOGGLE */
+.toggle-wrapper {
+  position: relative;
+  display: flex;
+  width: 260px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #00ffff33;
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 0 20px #00ffff22;
+}
+
+.toggle-slider {
+  position: absolute;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, #00ffff, #8a2be2);
+  border-radius: 30px;
+  transition: 0.4s ease;
+  box-shadow: 0 0 20px #00ffff;
+}
+
+.toggle-slider.right {
+  transform: translateX(100%);
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.toggle-btn.active {
+  color: black;
+  font-weight: bold;
+}
+
+/* 🔥 TOPBAR FIX (always visible) */
+.topbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+
+  background: #05070f;
+  border-bottom: 1px solid rgba(0,255,255,0.2);
+}
+
+/* LOGOUT */
+.logout-btn {
+  padding: 10px;
+  background: transparent;
+  border: 1px solid #ff4d4d;
+  color: #ff4d4d;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #ff4d4d;
+  color: black;
+  box-shadow: 0 0 10px #ff4d4d;
+}
