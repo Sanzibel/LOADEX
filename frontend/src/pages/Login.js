@@ -37,7 +37,14 @@ function Login({ onLogin }) {
       );
 
     } catch (err) {
-      setMessage(err.response?.data?.message || "Login failed.");
+      console.error("LOGIN REQUEST ERROR:", err);
+
+      setMessage(
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Login failed."
+      );
     }
   };
 
