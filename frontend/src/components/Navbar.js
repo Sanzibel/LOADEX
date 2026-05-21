@@ -411,7 +411,7 @@ const Navbar = () => {
           display: flex;
           justify-content: center;
 
-          z-index: 100;
+          z-index: 5000;
 
           background:
             rgba(5,6,13,0.75);
@@ -547,18 +547,21 @@ const Navbar = () => {
           position: fixed;
           top: 78px;
           left: 50%;
-          z-index: 200;
-          width: min(360px, calc(100vw - 32px));
+          z-index: 6000;
+          width: min(450px, calc(100vw - 32px));
+          min-height: 78px;
           padding: 16px;
           border-radius: 12px;
           border: 1px solid rgba(0,229,255,0.45);
-          background: #0c0c14;
+          background: rgba(7, 10, 20, 0.98);
           color: white;
           text-align: left;
           cursor: pointer;
           transform: translateX(-50%);
           box-shadow:
-            0 0 24px rgba(0,229,255,0.18);
+            0 18px 40px rgba(0,0,0,0.55),
+            0 0 24px rgba(0,229,255,0.22);
+          backdrop-filter: blur(10px);
           transform-origin: top center;
           animation:
             toastDrop 0.42s cubic-bezier(.2,.9,.2,1.05),
@@ -568,7 +571,8 @@ const Navbar = () => {
         .nav-toast.message {
           border-color: rgba(255,0,170,0.45);
           box-shadow:
-            0 0 24px rgba(255,0,170,0.18);
+            0 18px 40px rgba(0,0,0,0.55),
+            0 0 24px rgba(255,0,170,0.22);
         }
 
         .nav-toast strong,
@@ -588,6 +592,7 @@ const Navbar = () => {
         .nav-toast span {
           color: #bbb;
           line-height: 1.4;
+          opacity: 1;
         }
 
         @keyframes toastDrop {
