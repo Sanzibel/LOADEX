@@ -119,6 +119,39 @@ const initDB = async () => {
           qty INTEGER NOT NULL
         )
       `,
+      `
+        CREATE TABLE IF NOT EXISTS loadex_messages (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES loadex_users_v1(id) ON DELETE CASCADE,
+          sender_role TEXT NOT NULL CHECK (sender_role IN ('user', 'admin')),
+          message TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `,
+      `
+        CREATE TABLE IF NOT EXISTS loadex_notifications (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES loadex_users_v1(id) ON DELETE CASCADE,
+          order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          is_read BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `,
+      `
+        CREATE TABLE IF NOT EXISTS loadex_product_reviews (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES loadex_users_v1(id) ON DELETE CASCADE,
+          product_id INTEGER NOT NULL REFERENCES loadex_products(id) ON DELETE CASCADE,
+          order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+          rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+          comment TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE (user_id, product_id)
+        )
+      `,
     ]);
 
     const sql = getClient();

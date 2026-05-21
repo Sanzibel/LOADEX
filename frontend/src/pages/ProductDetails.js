@@ -28,6 +28,23 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reviewData, setReviewData] = useState({
+    summary: {
+      average_rating: 0,
+      review_count: 0,
+    },
+    reviews: [],
+  });
+  const [eligibility, setEligibility] = useState({
+    canReview: false,
+    myReview: null,
+  });
+  const [reviewForm, setReviewForm] = useState({
+    rating: "5",
+    comment: "",
+  });
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [savingReview, setSavingReview] = useState(false);
 
   useEffect(() => {
 
@@ -50,6 +67,42 @@ const ProductDetails = () => {
         setError("");
         setProduct(data);
 
+        const reviewRes = await fetch(
+          apiUrl(`/api/reviews/products/${id}`)
+        );
+
+        const reviews = await reviewRes.json();
+
+        if (reviewRes.ok) {
+          setReviewData(reviews);
+        }
+
+        const token = localStorage.getItem("token");
+
+        if (token) {
+          const eligibilityRes = await fetch(
+            apiUrl(`/api/reviews/products/${id}/my`),
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          const eligibilityData = await eligibilityRes.json();
+
+          if (eligibilityRes.ok) {
+            setEligibility(eligibilityData);
+
+            if (eligibilityData.myReview) {
+              setReviewForm({
+                rating: String(eligibilityData.myReview.rating),
+                comment: eligibilityData.myReview.comment,
+              });
+            }
+          }
+        }
+
       } catch (err) {
 
         console.error(err);
@@ -63,6 +116,33 @@ const ProductDetails = () => {
     fetchProduct();
 
   }, [id]);
+
+  const refreshReviews = async () => {
+    const reviewRes = await fetch(
+      apiUrl(`/api/reviews/products/${id}`)
+    );
+
+    const reviews = await reviewRes.json();
+
+    if (reviewRes.ok) {
+      setReviewData(reviews);
+    }
+
+    const eligibilityRes = await fetch(
+      apiUrl(`/api/reviews/products/${id}/my`),
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    const eligibilityData = await eligibilityRes.json();
+
+    if (eligibilityRes.ok) {
+      setEligibility(eligibilityData);
+    }
+  };
 
   // ✅ FIXED IMAGE HANDLER
   const getImageSrc = (image) => {
@@ -122,6 +202,58 @@ const ProductDetails = () => {
 
     navigate("/cart");
   };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+
+    const comment = reviewForm.comment.trim();
+
+    if (!comment) {
+      setReviewMessage("Please add a review comment.");
+      return;
+    }
+
+    try {
+      setSavingReview(true);
+      setReviewMessage("");
+
+      const res = await fetch(
+        apiUrl(`/api/reviews/products/${id}`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            rating: reviewForm.rating,
+            comment,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setReviewMessage(data.message || "Unable to save review.");
+        return;
+      }
+
+      setReviewMessage(data.message || "Review saved.");
+      await refreshReviews();
+    } catch (err) {
+      console.error(err);
+      setReviewMessage("Unable to save review.");
+    } finally {
+      setSavingReview(false);
+    }
+  };
+
+  const averageRating =
+    Number(reviewData.summary?.average_rating || 0);
+
+  const reviewCount =
+    Number(reviewData.summary?.review_count || 0);
 
   if (loading) {
     return (
@@ -209,6 +341,16 @@ const ProductDetails = () => {
             ₱{product.price}
           </h2>
 
+          <div
+            style={{
+              marginBottom: "20px",
+              color: "#00ffaa",
+              fontWeight: "bold",
+            }}
+          >
+            Rating: {averageRating.toFixed(1)} / 5 ({reviewCount} reviews)
+          </div>
+
           <hr
             style={{
               borderColor: "#222",
@@ -283,6 +425,229 @@ const ProductDetails = () => {
         </div>
 
       </div>
+
+      <div className="reviews-section">
+        <div className="reviews-heading">
+          <h2>Customer Reviews</h2>
+          <span>
+            {averageRating.toFixed(1)} / 5 from {reviewCount} reviews
+          </span>
+        </div>
+
+        {reviewMessage && (
+          <div className="review-message">
+            {reviewMessage}
+          </div>
+        )}
+
+        {eligibility.canReview ? (
+          <form className="review-form" onSubmit={submitReview}>
+            <div>
+              <label>Rating</label>
+              <select
+                value={reviewForm.rating}
+                onChange={(e) =>
+                  setReviewForm({
+                    ...reviewForm,
+                    rating: e.target.value,
+                  })
+                }
+              >
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Okay</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Bad</option>
+              </select>
+            </div>
+
+            <div>
+              <label>
+                {eligibility.myReview
+                  ? "Edit your review"
+                  : "Write a review"}
+              </label>
+              <textarea
+                value={reviewForm.comment}
+                onChange={(e) =>
+                  setReviewForm({
+                    ...reviewForm,
+                    comment: e.target.value,
+                  })
+                }
+                maxLength="1000"
+                placeholder="Share your experience with this product"
+              />
+            </div>
+
+            <button type="submit" disabled={savingReview}>
+              {savingReview
+                ? "Saving..."
+                : eligibility.myReview
+                  ? "Update Review"
+                  : "Submit Review"}
+            </button>
+          </form>
+        ) : (
+          <div className="review-note">
+            Reviews open after a delivered purchase of this product.
+          </div>
+        )}
+
+        <div className="review-list">
+          {reviewData.reviews.length === 0 ? (
+            <div className="review-note">
+              No reviews yet.
+            </div>
+          ) : (
+            reviewData.reviews.map((review) => (
+              <div className="review-card" key={review.id}>
+                <div className="review-top">
+                  <strong>{review.customer_name}</strong>
+                  <span>{review.rating} / 5</span>
+                </div>
+                <p>{review.comment}</p>
+                <small>
+                  {new Date(review.updated_at).toLocaleString()}
+                </small>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        .reviews-section {
+          max-width: 1200px;
+          margin: 60px auto 0;
+          padding: 24px;
+          background: #0c0c14;
+          border: 1px solid rgba(0,255,255,0.18);
+          border-radius: 14px;
+        }
+
+        .reviews-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 22px;
+        }
+
+        .reviews-heading h2 {
+          margin: 0;
+          color: #00e5ff;
+        }
+
+        .reviews-heading span {
+          color: #00ffaa;
+          font-weight: bold;
+        }
+
+        .review-form {
+          display: grid;
+          grid-template-columns: 180px 1fr auto;
+          gap: 14px;
+          align-items: end;
+          margin-bottom: 24px;
+        }
+
+        .review-form label {
+          display: block;
+          margin-bottom: 8px;
+          color: #888;
+          font-size: 12px;
+          text-transform: uppercase;
+        }
+
+        .review-form select,
+        .review-form textarea {
+          width: 100%;
+          background: #151824;
+          border: 1px solid rgba(0,255,255,0.16);
+          border-radius: 8px;
+          color: white;
+          outline: none;
+          padding: 12px;
+        }
+
+        .review-form textarea {
+          min-height: 82px;
+          resize: vertical;
+        }
+
+        .review-form button {
+          min-height: 44px;
+          border: none;
+          border-radius: 8px;
+          background: #00c2d4;
+          color: black;
+          cursor: pointer;
+          font-weight: bold;
+          padding: 0 16px;
+        }
+
+        .review-form button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .review-message,
+        .review-note {
+          padding: 14px;
+          border-radius: 10px;
+          margin-bottom: 18px;
+          background: #10131d;
+          border: 1px solid rgba(255,255,255,0.08);
+          color: #aaa;
+        }
+
+        .review-list {
+          display: grid;
+          gap: 14px;
+        }
+
+        .review-card {
+          padding: 16px;
+          border-radius: 12px;
+          background: #10131d;
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .review-top {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 10px;
+        }
+
+        .review-top span {
+          color: #ff00aa;
+          font-weight: bold;
+        }
+
+        .review-card p {
+          margin: 0 0 10px;
+          color: #ddd;
+          line-height: 1.5;
+          overflow-wrap: anywhere;
+        }
+
+        .review-card small {
+          color: #777;
+        }
+
+        @media (max-width: 900px) {
+          .review-form {
+            grid-template-columns: 1fr;
+          }
+
+          .reviews-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
+      `}</style>
 
     </div>
   );

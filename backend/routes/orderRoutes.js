@@ -3,6 +3,7 @@ const router = express.Router();
 
 const verifyToken = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/adminMiddleware");
+const requireCustomer = require("../middleware/customerMiddleware");
 
 const {
   createOrder,
@@ -16,14 +17,14 @@ const {
 } = require("../controllers/orderController");
 
 // ✅ CREATE ORDER
-router.post("/", verifyToken, createOrder);
+router.post("/", verifyToken, requireCustomer, createOrder);
 
 // ✅ USER — MY ORDERS
-router.get("/my", verifyToken, getMyOrders);
+router.get("/my", verifyToken, requireCustomer, getMyOrders);
 
-router.get("/my/:id", verifyToken, getMyOrderDetails);
+router.get("/my/:id", verifyToken, requireCustomer, getMyOrderDetails);
 
-router.put("/my/:id/cancel", verifyToken, cancelMyOrder);
+router.put("/my/:id/cancel", verifyToken, requireCustomer, cancelMyOrder);
 
 router.get("/stats/summary", verifyToken, requireAdmin, getAdminStats);
 

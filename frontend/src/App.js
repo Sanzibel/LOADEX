@@ -21,6 +21,9 @@ import MyOrders from "./pages/MyOrders";
 import AdminOrders from "./pages/AdminOrders";
 import AdminProducts from "./pages/AdminProducts";
 import Account from "./pages/Account";
+import Messages from "./pages/Messages";
+import AdminMessages from "./pages/AdminMessages";
+import Notifications from "./pages/Notifications";
 
 // components
 import Navbar from "./components/Navbar";
@@ -305,6 +308,24 @@ function App() {
             }
           />
 
+          <Route
+            path="/messages"
+            element={
+              <CustomerRoute token={token}>
+                <Messages />
+              </CustomerRoute>
+            }
+          />
+
+          <Route
+            path="/notifications"
+            element={
+              <CustomerRoute token={token}>
+                <Notifications />
+              </CustomerRoute>
+            }
+          />
+
           {/* ✅ ADMIN ORDERS */}
           <Route
             path="/admin/orders"
@@ -321,6 +342,15 @@ function App() {
             element={
               <AdminRoute token={token}>
                 <AdminProducts />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/messages"
+            element={
+              <AdminRoute token={token}>
+                <AdminMessages />
               </AdminRoute>
             }
           />

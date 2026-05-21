@@ -138,13 +138,31 @@ const Account = ({ onLogout }) => {
           <div className="button-group">
 
             {user.role !== "admin" && (
-              <button
-                onClick={() =>
-                  navigate("/my-orders")
-                }
-              >
-                My Orders
-              </button>
+              <>
+                <button
+                  onClick={() =>
+                    navigate("/my-orders")
+                  }
+                >
+                  My Orders
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate("/messages")
+                  }
+                >
+                  Contact Admin
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate("/notifications")
+                  }
+                >
+                  Notifications
+                </button>
+              </>
             )}
 
             {user.role === "admin" && (
@@ -164,6 +182,14 @@ const Account = ({ onLogout }) => {
                   }
                 >
                   Manage Products
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate("/admin/messages")
+                  }
+                >
+                  Customer Messages
                 </button>
 
               </>

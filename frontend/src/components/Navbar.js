@@ -7,6 +7,7 @@ const Navbar = () => {
   const location = useLocation();
 
   const [cartCount, setCartCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const role =
     localStorage.getItem("role");
@@ -45,13 +46,61 @@ const Navbar = () => {
 
     updateCartCount();
 
+    const fetchUnreadCount = async () => {
+      const token =
+        localStorage.getItem("token");
+
+      if (!token || isAdmin) {
+        setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const { apiUrl } =
+          await import("../config/api");
+
+        const res = await fetch(
+          apiUrl("/api/notifications/unread-count"),
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data =
+          await res.json();
+
+        if (res.ok) {
+          setUnreadCount(data.count || 0);
+        }
+      } catch (err) {
+        console.error(
+          "Notification count error:",
+          err
+        );
+      }
+    };
+
+    fetchUnreadCount();
+
     const handleCartUpdate = () => {
       updateCartCount();
+    };
+
+    const handleNotificationsUpdate = () => {
+      fetchUnreadCount();
     };
 
     window.addEventListener(
       "cartUpdated",
       handleCartUpdate
+    );
+
+    window.addEventListener(
+      "notificationsUpdated",
+      handleNotificationsUpdate
     );
 
     return () => {
@@ -61,9 +110,14 @@ const Navbar = () => {
         handleCartUpdate
       );
 
+      window.removeEventListener(
+        "notificationsUpdated",
+        handleNotificationsUpdate
+      );
+
     };
 
-  }, []);
+  }, [isAdmin]);
 
   return (
     <div className="navbar">
@@ -116,6 +170,51 @@ const Navbar = () => {
               >
                 Products
               </span>
+
+              <span
+                className={`nav-link ${
+                  location.pathname === "/admin/messages"
+                    ? "active-link"
+                    : ""
+                }`}
+                onClick={() => navigate("/admin/messages")}
+              >
+                Messages
+              </span>
+            </>
+          )}
+
+          {!isAdmin && (
+            <>
+              <span
+                className={`nav-link ${
+                  location.pathname === "/messages"
+                    ? "active-link"
+                    : ""
+                }`}
+                onClick={() => navigate("/messages")}
+              >
+                Contact
+              </span>
+
+              <div
+                className={`cart-icon ${
+                  location.pathname === "/notifications"
+                    ? "active-link"
+                    : ""
+                }`}
+                onClick={() => navigate("/notifications")}
+              >
+                <span className="cart-text">
+                  Alerts
+                </span>
+
+                {unreadCount > 0 && (
+                  <span className="cart-badge">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
             </>
           )}
 
@@ -236,7 +335,7 @@ const Navbar = () => {
         .nav-right {
           display: flex;
           align-items: center;
-          gap: 30px;
+          gap: 24px;
 
           color: #aaa;
         }
@@ -292,6 +391,26 @@ const Navbar = () => {
 
           box-shadow:
             0 0 10px #ff00aa;
+        }
+
+        @media (max-width: 720px) {
+          .navbar {
+            height: auto;
+          }
+
+          .navbar-inner {
+            min-height: 70px;
+            padding: 12px 16px;
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 12px;
+          }
+
+          .nav-right {
+            width: 100%;
+            gap: 16px;
+            flex-wrap: wrap;
+          }
         }
 
       `}</style>
