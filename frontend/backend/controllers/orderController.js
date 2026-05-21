@@ -364,20 +364,51 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
+    const existingResult = await db.query(
+      `
+        SELECT id, user_id, status
+        FROM orders
+        WHERE id = $1
+      `,
+      [id]
+    );
+
+    const existingOrder = existingResult[0];
+
+    if (!existingOrder) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
     const result = await db.query(
       `
         UPDATE orders
         SET status = $1
         WHERE id = $2
-        RETURNING id
+        RETURNING id, user_id, status
       `,
       [status, id]
     );
 
-    if (result.length === 0) {
-      return res.status(404).json({
-        message: "Order not found",
-      });
+    if (existingOrder.status !== status) {
+      await db.query(
+        `
+          INSERT INTO loadex_notifications (
+            user_id,
+            order_id,
+            title,
+            message
+          )
+          VALUES ($1, $2, $3, $4)
+        `,
+        [
+          result[0].user_id,
+          result[0].id,
+          `Order #${result[0].id} is now ${status}`,
+          `Your LOADEX order status was updated from ${existingOrder.status} to ${status}.`,
+        ]
+      );
     }
 
     res.json({
