@@ -125,8 +125,34 @@ const initDB = async () => {
           user_id INTEGER NOT NULL REFERENCES loadex_users_v1(id) ON DELETE CASCADE,
           sender_role TEXT NOT NULL CHECK (sender_role IN ('user', 'admin')),
           message TEXT NOT NULL,
+          read_by_customer BOOLEAN NOT NULL DEFAULT TRUE,
+          read_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+      `,
+      `
+        ALTER TABLE loadex_messages
+        ADD COLUMN IF NOT EXISTS read_by_customer BOOLEAN NOT NULL DEFAULT TRUE
+      `,
+      `
+        ALTER TABLE loadex_messages
+        ADD COLUMN IF NOT EXISTS read_by_admin BOOLEAN NOT NULL DEFAULT FALSE
+      `,
+      `
+        UPDATE loadex_messages
+        SET
+          read_by_customer = CASE
+            WHEN sender_role = 'admin' THEN FALSE
+            ELSE TRUE
+          END,
+          read_by_admin = CASE
+            WHEN sender_role = 'user' THEN FALSE
+            ELSE TRUE
+          END
+        WHERE
+          (sender_role = 'admin' AND read_by_customer = TRUE)
+          OR (sender_role = 'admin' AND read_by_admin = FALSE)
+          OR (sender_role = 'user' AND read_by_customer = FALSE)
       `,
       `
         CREATE TABLE IF NOT EXISTS loadex_notifications (

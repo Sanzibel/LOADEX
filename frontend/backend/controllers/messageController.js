@@ -5,6 +5,16 @@ const cleanMessage = (message) =>
 
 exports.getMyMessages = async (req, res) => {
   try {
+    await db.query(
+      `
+        UPDATE loadex_messages
+        SET read_by_customer = TRUE
+        WHERE user_id = $1
+          AND sender_role = 'admin'
+      `,
+      [req.user.id]
+    );
+
     const messages = await db.query(
       `
         SELECT
@@ -12,6 +22,8 @@ exports.getMyMessages = async (req, res) => {
           user_id,
           sender_role,
           message,
+          read_by_customer,
+          read_by_admin,
           created_at
         FROM loadex_messages
         WHERE user_id = $1
@@ -41,9 +53,22 @@ exports.sendCustomerMessage = async (req, res) => {
 
     const result = await db.query(
       `
-        INSERT INTO loadex_messages (user_id, sender_role, message)
-        VALUES ($1, 'user', $2)
-        RETURNING id, user_id, sender_role, message, created_at
+        INSERT INTO loadex_messages (
+          user_id,
+          sender_role,
+          message,
+          read_by_customer,
+          read_by_admin
+        )
+        VALUES ($1, 'user', $2, TRUE, FALSE)
+        RETURNING
+          id,
+          user_id,
+          sender_role,
+          message,
+          read_by_customer,
+          read_by_admin,
+          created_at
       `,
       [req.user.id, message]
     );
@@ -65,6 +90,7 @@ exports.getAdminThreads = async (req, res) => {
         latest.message AS last_message,
         latest.sender_role AS last_sender_role,
         latest.created_at AS last_message_at,
+        COUNT(CASE WHEN m.sender_role = 'user' AND m.read_by_admin = FALSE THEN 1 END)::int AS unread_count,
         COUNT(m.id)::int AS message_count
       FROM loadex_users_v1 u
       JOIN loadex_messages m ON m.user_id = u.id
@@ -111,6 +137,16 @@ exports.getAdminThreadMessages = async (req, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
+    await db.query(
+      `
+        UPDATE loadex_messages
+        SET read_by_admin = TRUE
+        WHERE user_id = $1
+          AND sender_role = 'user'
+      `,
+      [userId]
+    );
+
     const messages = await db.query(
       `
         SELECT
@@ -118,6 +154,8 @@ exports.getAdminThreadMessages = async (req, res) => {
           user_id,
           sender_role,
           message,
+          read_by_customer,
+          read_by_admin,
           created_at
         FROM loadex_messages
         WHERE user_id = $1
@@ -165,9 +203,22 @@ exports.sendAdminReply = async (req, res) => {
 
     const result = await db.query(
       `
-        INSERT INTO loadex_messages (user_id, sender_role, message)
-        VALUES ($1, 'admin', $2)
-        RETURNING id, user_id, sender_role, message, created_at
+        INSERT INTO loadex_messages (
+          user_id,
+          sender_role,
+          message,
+          read_by_customer,
+          read_by_admin
+        )
+        VALUES ($1, 'admin', $2, FALSE, TRUE)
+        RETURNING
+          id,
+          user_id,
+          sender_role,
+          message,
+          read_by_customer,
+          read_by_admin,
+          created_at
       `,
       [userId, message]
     );
@@ -176,5 +227,51 @@ exports.sendAdminReply = async (req, res) => {
   } catch (err) {
     console.error("SEND ADMIN REPLY ERROR:", err);
     res.status(500).json({ message: "Unable to send reply" });
+  }
+};
+
+exports.getCustomerUnreadCount = async (req, res) => {
+  try {
+    const result = await db.query(
+      `
+        SELECT
+          COUNT(*)::int AS count,
+          MAX(created_at) AS latest_at
+        FROM loadex_messages
+        WHERE user_id = $1
+          AND sender_role = 'admin'
+          AND read_by_customer = FALSE
+      `,
+      [req.user.id]
+    );
+
+    res.json({
+      count: result[0]?.count || 0,
+      latestAt: result[0]?.latest_at || null,
+    });
+  } catch (err) {
+    console.error("GET CUSTOMER MESSAGE COUNT ERROR:", err);
+    res.status(500).json({ message: "Unable to load message count" });
+  }
+};
+
+exports.getAdminUnreadCount = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT
+        COUNT(*)::int AS count,
+        MAX(created_at) AS latest_at
+      FROM loadex_messages
+      WHERE sender_role = 'user'
+        AND read_by_admin = FALSE
+    `);
+
+    res.json({
+      count: result[0]?.count || 0,
+      latestAt: result[0]?.latest_at || null,
+    });
+  } catch (err) {
+    console.error("GET ADMIN MESSAGE COUNT ERROR:", err);
+    res.status(500).json({ message: "Unable to load message count" });
   }
 };

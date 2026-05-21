@@ -29,7 +29,9 @@ exports.getUnreadCount = async (req, res) => {
   try {
     const result = await db.query(
       `
-        SELECT COUNT(*)::int AS count
+        SELECT
+          COUNT(*)::int AS count,
+          MAX(created_at) AS latest_at
         FROM loadex_notifications
         WHERE user_id = $1
           AND is_read = FALSE
@@ -37,7 +39,10 @@ exports.getUnreadCount = async (req, res) => {
       [req.user.id]
     );
 
-    res.json({ count: result[0]?.count || 0 });
+    res.json({
+      count: result[0]?.count || 0,
+      latestAt: result[0]?.latest_at || null,
+    });
   } catch (err) {
     console.error("GET UNREAD COUNT ERROR:", err);
     res.status(500).json({ message: "Unable to load notifications" });

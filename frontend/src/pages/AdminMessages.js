@@ -61,6 +61,7 @@ const AdminMessages = () => {
 
       setError("");
       setThread(data);
+      window.dispatchEvent(new Event("messagesUpdated"));
     } catch (err) {
       console.error(err);
       setError("Unable to load conversation.");

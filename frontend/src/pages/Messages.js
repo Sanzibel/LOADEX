@@ -30,6 +30,7 @@ const Messages = () => {
 
       setError("");
       setMessages(Array.isArray(data) ? data : []);
+      window.dispatchEvent(new Event("messagesUpdated"));
     } catch (err) {
       console.error(err);
       setError("Unable to load messages.");

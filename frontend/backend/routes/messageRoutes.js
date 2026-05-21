@@ -9,6 +9,19 @@ const messageController = require("../controllers/messageController");
 
 router.get("/my", verifyToken, requireCustomer, messageController.getMyMessages);
 router.post("/my", verifyToken, requireCustomer, messageController.sendCustomerMessage);
+router.get(
+  "/my/unread-count",
+  verifyToken,
+  requireCustomer,
+  messageController.getCustomerUnreadCount
+);
+
+router.get(
+  "/admin/unread-count",
+  verifyToken,
+  requireAdmin,
+  messageController.getAdminUnreadCount
+);
 
 router.get(
   "/admin/threads",

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { apiUrl } from "../config/api";
 
 const Navbar = () => {
 
@@ -8,6 +9,12 @@ const Navbar = () => {
 
   const [cartCount, setCartCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messageUnreadCount, setMessageUnreadCount] = useState(0);
+  const [toast, setToast] = useState(null);
+
+  const notificationKeyRef = useRef("");
+  const messageKeyRef = useRef("");
+  const initializedRef = useRef(false);
 
   const role =
     localStorage.getItem("role");
@@ -46,21 +53,36 @@ const Navbar = () => {
 
     updateCartCount();
 
-    const fetchUnreadCount = async () => {
+    const showToast = (nextToast) => {
+      setToast(nextToast);
+
+      window.clearTimeout(
+        window.loadexToastTimer
+      );
+
+      window.loadexToastTimer =
+        window.setTimeout(() => {
+          setToast(null);
+        }, 4500);
+    };
+
+    const fetchUnreadCounts = async () => {
       const token =
         localStorage.getItem("token");
 
-      if (!token || isAdmin) {
+      if (!token) {
         setUnreadCount(0);
+        setMessageUnreadCount(0);
         return;
       }
 
       try {
-        const { apiUrl } =
-          await import("../config/api");
+        const messagePath = isAdmin
+          ? "/api/messages/admin/unread-count"
+          : "/api/messages/my/unread-count";
 
-        const res = await fetch(
-          apiUrl("/api/notifications/unread-count"),
+        const messageRes = await fetch(
+          apiUrl(messagePath),
           {
             headers: {
               Authorization:
@@ -69,28 +91,115 @@ const Navbar = () => {
           }
         );
 
-        const data =
-          await res.json();
+        const messageData =
+          await messageRes.json();
 
-        if (res.ok) {
-          setUnreadCount(data.count || 0);
+        if (messageRes.ok) {
+          const count =
+            messageData.count || 0;
+
+          const latestAt =
+            messageData.latestAt || "";
+
+          const key =
+            `${count}:${latestAt}`;
+
+          setMessageUnreadCount(count);
+
+          if (
+            initializedRef.current &&
+            count > 0 &&
+            key !== messageKeyRef.current
+          ) {
+            showToast({
+              type: "message",
+              title: isAdmin
+                ? "New customer message"
+                : "New admin reply",
+              body: isAdmin
+                ? "A customer sent a message."
+                : "The LOADEX admin replied to your inquiry.",
+              path: isAdmin
+                ? "/admin/messages"
+                : "/messages",
+            });
+          }
+
+          messageKeyRef.current = key;
+        }
+
+        if (!isAdmin) {
+          const notificationRes = await fetch(
+            apiUrl("/api/notifications/unread-count"),
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+          const notificationData =
+            await notificationRes.json();
+
+          if (notificationRes.ok) {
+            const count =
+              notificationData.count || 0;
+
+            const latestAt =
+              notificationData.latestAt || "";
+
+            const key =
+              `${count}:${latestAt}`;
+
+            setUnreadCount(count);
+
+            if (
+              initializedRef.current &&
+              count > 0 &&
+              key !== notificationKeyRef.current
+            ) {
+              showToast({
+                type: "status",
+                title: "Order status update",
+                body: "One of your LOADEX orders was updated.",
+                path: "/notifications",
+              });
+            }
+
+            notificationKeyRef.current = key;
+          }
+        } else {
+          setUnreadCount(0);
         }
       } catch (err) {
         console.error(
-          "Notification count error:",
+          "Unread count error:",
           err
         );
+      } finally {
+        initializedRef.current = true;
       }
     };
 
-    fetchUnreadCount();
+    fetchUnreadCounts();
+
+    const pollTimer =
+      window.setInterval(
+        fetchUnreadCounts,
+        20000
+      );
 
     const handleCartUpdate = () => {
       updateCartCount();
     };
 
     const handleNotificationsUpdate = () => {
-      fetchUnreadCount();
+      fetchUnreadCounts();
+    };
+
+    const handleMessagesUpdate = () => {
+      fetchUnreadCounts();
     };
 
     window.addEventListener(
@@ -103,7 +212,13 @@ const Navbar = () => {
       handleNotificationsUpdate
     );
 
+    window.addEventListener(
+      "messagesUpdated",
+      handleMessagesUpdate
+    );
+
     return () => {
+      window.clearInterval(pollTimer);
 
       window.removeEventListener(
         "cartUpdated",
@@ -113,6 +228,11 @@ const Navbar = () => {
       window.removeEventListener(
         "notificationsUpdated",
         handleNotificationsUpdate
+      );
+
+      window.removeEventListener(
+        "messagesUpdated",
+        handleMessagesUpdate
       );
 
     };
@@ -172,7 +292,7 @@ const Navbar = () => {
               </span>
 
               <span
-                className={`nav-link ${
+                className={`nav-link nav-badge-link ${
                   location.pathname === "/admin/messages"
                     ? "active-link"
                     : ""
@@ -180,6 +300,11 @@ const Navbar = () => {
                 onClick={() => navigate("/admin/messages")}
               >
                 Messages
+                {messageUnreadCount > 0 && (
+                  <span className="cart-badge">
+                    {messageUnreadCount}
+                  </span>
+                )}
               </span>
             </>
           )}
@@ -187,7 +312,7 @@ const Navbar = () => {
           {!isAdmin && (
             <>
               <span
-                className={`nav-link ${
+                className={`nav-link nav-badge-link ${
                   location.pathname === "/messages"
                     ? "active-link"
                     : ""
@@ -195,6 +320,11 @@ const Navbar = () => {
                 onClick={() => navigate("/messages")}
               >
                 Contact
+                {messageUnreadCount > 0 && (
+                  <span className="cart-badge">
+                    {messageUnreadCount}
+                  </span>
+                )}
               </span>
 
               <div
@@ -255,6 +385,19 @@ const Navbar = () => {
         </div>
 
       </div>
+
+      {toast && (
+        <button
+          className={`nav-toast ${toast.type}`}
+          onClick={() => {
+            setToast(null);
+            navigate(toast.path);
+          }}
+        >
+          <strong>{toast.title}</strong>
+          <span>{toast.body}</span>
+        </button>
+      )}
 
       <style>{`
 
@@ -341,9 +484,16 @@ const Navbar = () => {
         }
 
         .nav-link {
+          position: relative;
+
           cursor: pointer;
 
           transition: 0.2s;
+        }
+
+        .nav-badge-link {
+          display: inline-flex;
+          align-items: center;
         }
 
         .nav-link:hover {
@@ -393,6 +543,61 @@ const Navbar = () => {
             0 0 10px #ff00aa;
         }
 
+        .nav-toast {
+          position: fixed;
+          top: 86px;
+          right: 24px;
+          z-index: 200;
+          width: min(360px, calc(100vw - 32px));
+          padding: 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(0,229,255,0.45);
+          background: #0c0c14;
+          color: white;
+          text-align: left;
+          cursor: pointer;
+          box-shadow:
+            0 0 24px rgba(0,229,255,0.18);
+          animation: toastIn 0.22s ease-out;
+        }
+
+        .nav-toast.message {
+          border-color: rgba(255,0,170,0.45);
+          box-shadow:
+            0 0 24px rgba(255,0,170,0.18);
+        }
+
+        .nav-toast strong,
+        .nav-toast span {
+          display: block;
+        }
+
+        .nav-toast strong {
+          margin-bottom: 6px;
+          color: #00e5ff;
+        }
+
+        .nav-toast.message strong {
+          color: #ff8fbf;
+        }
+
+        .nav-toast span {
+          color: #bbb;
+          line-height: 1.4;
+        }
+
+        @keyframes toastIn {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         @media (max-width: 720px) {
           .navbar {
             height: auto;
@@ -410,6 +615,11 @@ const Navbar = () => {
             width: 100%;
             gap: 16px;
             flex-wrap: wrap;
+          }
+
+          .nav-toast {
+            top: 128px;
+            right: 16px;
           }
         }
 
