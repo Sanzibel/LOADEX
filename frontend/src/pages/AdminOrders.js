@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { apiUrl } from "../config/api";
+import { formatPeso } from "../utils/formatCurrency";
 
 const statusOptions = [
   "Pending",
@@ -305,7 +306,7 @@ const AdminOrders = () => {
                 </span>
 
                 <strong>
-                  ₱{Number(order.total).toFixed(2)}
+                  {formatPeso(order.total)}
                 </strong>
 
               </div>
@@ -350,10 +351,10 @@ const AdminOrders = () => {
                             <span>{item.name}</span>
                             <span>x{item.qty}</span>
                             <span>
-                              ₱{Number(item.price).toFixed(2)}
+                              {formatPeso(item.price)}
                             </span>
                             <strong>
-                              ₱{(Number(item.price) * item.qty).toFixed(2)}
+                              {formatPeso(Number(item.price) * item.qty)}
                             </strong>
                           </div>
                         ))}

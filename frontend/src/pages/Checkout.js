@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/api";
+import { formatPeso } from "../utils/formatCurrency";
 
 const Checkout = () => {
   const [cart, setCart] = useState([]);
@@ -180,7 +181,7 @@ const Checkout = () => {
                   <span className="summary-name">{item.name}</span>
                   <span className="summary-qty">x{item.qty}</span>
                   <span className="summary-price">
-                    ₱{(item.price * item.qty).toFixed(2)}
+                    {formatPeso(item.price * item.qty)}
                   </span>
                 </div>
               ))}
@@ -195,7 +196,7 @@ const Checkout = () => {
 
               <div className="summary-total">
                 <span>Total</span>
-                <span>₱{total.toFixed(2)}</span>
+                <span>{formatPeso(total)}</span>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiUrl, imageUrl } from "../config/api";
+import { formatPeso } from "../utils/formatCurrency";
 
 // local images
 import mouse from "../assets/mouse.webp";
@@ -338,7 +339,7 @@ const ProductDetails = () => {
               marginBottom: "20px",
             }}
           >
-            ₱{product.price}
+            {formatPeso(product.price)}
           </h2>
 
           <div

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { formatPeso } from "../utils/formatCurrency";
 
 const Success = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Success = () => {
         <h1>🎉 Order Placed!</h1>
         <p>Your order was successfully processed.</p>
 
-        <h2>₱{total.toFixed(2)}</h2>
+        <h2>{formatPeso(total)}</h2>
 
         <p className="sub">
           Your items will be delivered soon 🚚

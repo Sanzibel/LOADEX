@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { imageUrl } from "../config/api";
+import { formatPeso } from "../utils/formatCurrency";
 
 // local images
 import mouse from "../assets/mouse.webp";
@@ -161,7 +162,7 @@ const Cart = () => {
                 </h3>
 
                 <p className="cart-price">
-                  ₱{item.price}
+                  {formatPeso(item.price)}
                 </p>
 
               </div>
@@ -195,11 +196,7 @@ const Cart = () => {
               </div>
 
               <h3 className="item-total">
-                ₱
-                {(
-                  item.price *
-                  item.qty
-                ).toFixed(2)}
+                {formatPeso(item.price * item.qty)}
               </h3>
 
               <button
@@ -224,7 +221,7 @@ const Cart = () => {
             <h3>Total</h3>
 
             <h1>
-              ₱{total.toFixed(2)}
+              {formatPeso(total)}
             </h1>
 
           </div>

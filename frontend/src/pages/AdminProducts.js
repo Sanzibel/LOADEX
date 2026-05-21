@@ -5,6 +5,7 @@ import React, {
 } from "react";
 
 import { apiUrl, imageUrl } from "../config/api";
+import { formatPeso } from "../utils/formatCurrency";
 
 import mouse from "../assets/mouse.webp";
 import keyboard from "../assets/keyboard.avif";
@@ -435,7 +436,7 @@ const AdminProducts = () => {
                     </p>
 
                     <span>
-                      ₱{product.price}
+                      {formatPeso(product.price)}
                     </span>
 
                   </div>

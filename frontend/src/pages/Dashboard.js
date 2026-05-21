@@ -7,6 +7,7 @@ import {
   useNavigate
 } from "react-router-dom";
 import { apiUrl, imageUrl } from "../config/api";
+import { formatPeso } from "../utils/formatCurrency";
 
 import "./dashboard.css";
 
@@ -335,7 +336,7 @@ function Dashboard({ onLogout }) {
           </p>
 
           <span>
-            ₱349.99
+            {formatPeso(349.99)}
           </span>
 
         </div>
@@ -356,7 +357,7 @@ function Dashboard({ onLogout }) {
           </p>
 
           <span>
-            ₱319.99
+            {formatPeso(319.99)}
           </span>
 
         </div>
@@ -446,7 +447,7 @@ function Dashboard({ onLogout }) {
             </p>
 
             <span>
-              ₱{p.price}
+              {formatPeso(p.price)}
             </span>
 
           </div>

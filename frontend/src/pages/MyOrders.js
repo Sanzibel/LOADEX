@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { apiUrl } from "../config/api";
+import { formatPeso } from "../utils/formatCurrency";
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -192,7 +193,7 @@ const MyOrders = () => {
                   <span>Total</span>
 
                   <h2>
-                    ₱{Number(order.total).toFixed(2)}
+                    {formatPeso(order.total)}
                   </h2>
                 </div>
 
@@ -220,9 +221,9 @@ const MyOrders = () => {
                             <div className="item-row" key={item.id}>
                               <span>{item.name}</span>
                               <span>x{item.qty}</span>
-                              <span>₱{Number(item.price).toFixed(2)}</span>
+                              <span>{formatPeso(item.price)}</span>
                               <strong>
-                                ₱{(Number(item.price) * item.qty).toFixed(2)}
+                                {formatPeso(Number(item.price) * item.qty)}
                               </strong>
                             </div>
                           ))}
