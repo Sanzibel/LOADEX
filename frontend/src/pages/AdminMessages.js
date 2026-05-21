@@ -10,6 +10,8 @@ const AdminMessages = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [thread, setThread] = useState(null);
   const [draft, setDraft] = useState("");
+  const [imageData, setImageData] = useState("");
+  const [imageName, setImageName] = useState("");
   const [loading, setLoading] = useState(true);
   const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -85,8 +87,8 @@ const AdminMessages = () => {
 
     const message = draft.trim();
 
-    if (!selectedUserId || !message) {
-      setError("Reply cannot be empty.");
+    if (!selectedUserId || (!message && !imageData)) {
+      setError("Reply or image is required.");
       return;
     }
 
@@ -101,7 +103,10 @@ const AdminMessages = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${getToken()}`,
           },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({
+            message,
+            imageUrl: imageData,
+          }),
         }
       );
 
@@ -114,6 +119,8 @@ const AdminMessages = () => {
 
       setError("");
       setDraft("");
+      setImageData("");
+      setImageName("");
       setThread((current) => ({
         ...current,
         messages: [...(current?.messages || []), data],
@@ -125,6 +132,38 @@ const AdminMessages = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image must be under 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setImageData(String(reader.result || ""));
+      setImageName(file.name);
+      setError("");
+    };
+
+    reader.onerror = () => {
+      setError("Unable to read image.");
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -186,7 +225,14 @@ const AdminMessages = () => {
                         <span>
                           {item.sender_role === "admin" ? "Admin" : "Customer"}
                         </span>
-                        <p>{item.message}</p>
+                        {item.message && <p>{item.message}</p>}
+                        {item.image_url && (
+                          <img
+                            className="message-image"
+                            src={item.image_url}
+                            alt="Message attachment"
+                          />
+                        )}
                         <small>
                           {new Date(item.created_at).toLocaleString()}
                         </small>
@@ -202,6 +248,32 @@ const AdminMessages = () => {
                     placeholder="Type your reply"
                     maxLength="1000"
                   />
+                  <div className="message-tools">
+                    <label className="image-picker">
+                      Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+
+                    {imageData && (
+                      <div className="image-preview">
+                        <img src={imageData} alt="Selected attachment" />
+                        <span>{imageName}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageData("");
+                            setImageName("");
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button type="submit" disabled={sending}>
                     {sending ? "Sending..." : "Reply"}
                   </button>

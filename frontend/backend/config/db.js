@@ -127,6 +127,7 @@ const initDB = async () => {
           message TEXT NOT NULL,
           read_by_customer BOOLEAN NOT NULL DEFAULT TRUE,
           read_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
+          image_url TEXT DEFAULT '',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `,
@@ -137,6 +138,10 @@ const initDB = async () => {
       `
         ALTER TABLE loadex_messages
         ADD COLUMN IF NOT EXISTS read_by_admin BOOLEAN NOT NULL DEFAULT FALSE
+      `,
+      `
+        ALTER TABLE loadex_messages
+        ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT ''
       `,
       `
         UPDATE loadex_messages

@@ -7,6 +7,8 @@ const getToken = () =>
 const Messages = () => {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
+  const [imageData, setImageData] = useState("");
+  const [imageName, setImageName] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -48,8 +50,8 @@ const Messages = () => {
 
     const message = draft.trim();
 
-    if (!message) {
-      setError("Message cannot be empty.");
+    if (!message && !imageData) {
+      setError("Message or image is required.");
       return;
     }
 
@@ -62,7 +64,10 @@ const Messages = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({
+          message,
+          imageUrl: imageData,
+        }),
       });
 
       const data = await res.json();
@@ -74,6 +79,8 @@ const Messages = () => {
 
       setError("");
       setDraft("");
+      setImageData("");
+      setImageName("");
       setMessages((current) => [...current, data]);
     } catch (err) {
       console.error(err);
@@ -81,6 +88,38 @@ const Messages = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image must be under 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setImageData(String(reader.result || ""));
+      setImageName(file.name);
+      setError("");
+    };
+
+    reader.onerror = () => {
+      setError("Unable to read image.");
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -110,7 +149,14 @@ const Messages = () => {
                     <span>
                       {item.sender_role === "user" ? "You" : "Admin"}
                     </span>
-                    <p>{item.message}</p>
+                    {item.message && <p>{item.message}</p>}
+                    {item.image_url && (
+                      <img
+                        className="message-image"
+                        src={item.image_url}
+                        alt="Message attachment"
+                      />
+                    )}
                     <small>{new Date(item.created_at).toLocaleString()}</small>
                   </div>
                 </div>
@@ -125,6 +171,32 @@ const Messages = () => {
               placeholder="Type your inquiry"
               maxLength="1000"
             />
+            <div className="message-tools">
+              <label className="image-picker">
+                Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </label>
+
+              {imageData && (
+                <div className="image-preview">
+                  <img src={imageData} alt="Selected attachment" />
+                  <span>{imageName}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageData("");
+                      setImageName("");
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
             <button type="submit" disabled={sending}>
               {sending ? "Sending..." : "Send Message"}
             </button>
@@ -225,6 +297,16 @@ export const messageStyles = `
     overflow-wrap: anywhere;
   }
 
+  .message-image {
+    display: block;
+    width: min(320px, 100%);
+    max-height: 260px;
+    margin-top: 10px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
   .message-bubble small {
     display: block;
     margin-top: 10px;
@@ -234,8 +316,9 @@ export const messageStyles = `
   .message-form {
     margin-top: 20px;
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 190px auto;
     gap: 12px;
+    align-items: stretch;
   }
 
   .message-form textarea {
@@ -258,6 +341,62 @@ export const messageStyles = `
     cursor: pointer;
     font-weight: bold;
     padding: 0 18px;
+  }
+
+  .message-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .image-picker {
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    border: 1px solid rgba(255,0,170,0.35);
+    color: #ff8fbf;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .image-picker input {
+    display: none;
+  }
+
+  .image-preview {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+    background: #10131d;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .image-preview img {
+    width: 42px;
+    height: 42px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+
+  .image-preview span {
+    min-width: 0;
+    color: #aaa;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .image-preview button {
+    grid-column: 1 / -1;
+    height: 30px;
+    padding: 0;
+    background: #252b3a;
+    color: #ddd;
   }
 
   .message-form button:disabled {

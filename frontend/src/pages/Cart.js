@@ -349,6 +349,10 @@ const Cart = () => {
 
         .item-total {
           color: #ff00aa;
+          min-width: 120px;
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
         }
 
         .delete-btn {
@@ -375,6 +379,8 @@ const Cart = () => {
         .total-top h1 {
           color: #ff00aa;
           text-shadow: 0 0 12px #ff00aa;
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
         }
 
         .btn-row {
@@ -406,6 +412,24 @@ const Cart = () => {
           opacity: 0.45;
           cursor: not-allowed;
           box-shadow: none;
+        }
+
+        @media (max-width: 760px) {
+          .cart-card,
+          .cart-right,
+          .total-top,
+          .btn-row {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .cart-right {
+            gap: 16px;
+          }
+
+          .item-total {
+            text-align: left;
+          }
         }
 
       `}</style>

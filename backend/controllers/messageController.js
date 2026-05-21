@@ -3,6 +3,25 @@ const db = require("../config/db");
 const cleanMessage = (message) =>
   String(message || "").trim();
 
+const cleanImage = (image) =>
+  String(image || "").trim();
+
+const validateImage = (image) => {
+  if (!image) {
+    return "";
+  }
+
+  if (!/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(image)) {
+    return "Only PNG, JPG, WEBP, or GIF images can be sent";
+  }
+
+  if (image.length > 2800000) {
+    return "Image must be under 2MB";
+  }
+
+  return "";
+};
+
 exports.getMyMessages = async (req, res) => {
   try {
     await db.query(
@@ -24,6 +43,7 @@ exports.getMyMessages = async (req, res) => {
           message,
           read_by_customer,
           read_by_admin,
+          image_url,
           created_at
         FROM loadex_messages
         WHERE user_id = $1
@@ -42,9 +62,15 @@ exports.getMyMessages = async (req, res) => {
 exports.sendCustomerMessage = async (req, res) => {
   try {
     const message = cleanMessage(req.body.message);
+    const imageUrl = cleanImage(req.body.imageUrl);
+    const imageError = validateImage(imageUrl);
 
-    if (message.length < 1) {
-      return res.status(400).json({ message: "Message cannot be empty" });
+    if (imageError) {
+      return res.status(400).json({ message: imageError });
+    }
+
+    if (message.length < 1 && !imageUrl) {
+      return res.status(400).json({ message: "Message or image is required" });
     }
 
     if (message.length > 1000) {
@@ -58,9 +84,10 @@ exports.sendCustomerMessage = async (req, res) => {
           sender_role,
           message,
           read_by_customer,
-          read_by_admin
+          read_by_admin,
+          image_url
         )
-        VALUES ($1, 'user', $2, TRUE, FALSE)
+        VALUES ($1, 'user', $2, TRUE, FALSE, $3)
         RETURNING
           id,
           user_id,
@@ -68,9 +95,10 @@ exports.sendCustomerMessage = async (req, res) => {
           message,
           read_by_customer,
           read_by_admin,
+          image_url,
           created_at
       `,
-      [req.user.id, message]
+      [req.user.id, message, imageUrl]
     );
 
     res.status(201).json(result[0]);
@@ -87,7 +115,7 @@ exports.getAdminThreads = async (req, res) => {
         u.id AS user_id,
         u.name,
         u.email,
-        latest.message AS last_message,
+        COALESCE(NULLIF(latest.message, ''), 'Image attachment') AS last_message,
         latest.sender_role AS last_sender_role,
         latest.created_at AS last_message_at,
         COUNT(CASE WHEN m.sender_role = 'user' AND m.read_by_admin = FALSE THEN 1 END)::int AS unread_count,
@@ -156,6 +184,7 @@ exports.getAdminThreadMessages = async (req, res) => {
           message,
           read_by_customer,
           read_by_admin,
+          image_url,
           created_at
         FROM loadex_messages
         WHERE user_id = $1
@@ -178,9 +207,15 @@ exports.sendAdminReply = async (req, res) => {
   try {
     const { userId } = req.params;
     const message = cleanMessage(req.body.message);
+    const imageUrl = cleanImage(req.body.imageUrl);
+    const imageError = validateImage(imageUrl);
 
-    if (message.length < 1) {
-      return res.status(400).json({ message: "Reply cannot be empty" });
+    if (imageError) {
+      return res.status(400).json({ message: imageError });
+    }
+
+    if (message.length < 1 && !imageUrl) {
+      return res.status(400).json({ message: "Reply or image is required" });
     }
 
     if (message.length > 1000) {
@@ -208,9 +243,10 @@ exports.sendAdminReply = async (req, res) => {
           sender_role,
           message,
           read_by_customer,
-          read_by_admin
+          read_by_admin,
+          image_url
         )
-        VALUES ($1, 'admin', $2, FALSE, TRUE)
+        VALUES ($1, 'admin', $2, FALSE, TRUE, $3)
         RETURNING
           id,
           user_id,
@@ -218,9 +254,10 @@ exports.sendAdminReply = async (req, res) => {
           message,
           read_by_customer,
           read_by_admin,
+          image_url,
           created_at
       `,
-      [userId, message]
+      [userId, message, imageUrl]
     );
 
     res.status(201).json(result[0]);

@@ -177,8 +177,11 @@ const Checkout = () => {
 
               {cart.map(item => (
                 <div key={item.id} className="summary-item">
-                  <span>{item.name} x{item.qty}</span>
-                  <span>₱{(item.price * item.qty).toFixed(2)}</span>
+                  <span className="summary-name">{item.name}</span>
+                  <span className="summary-qty">x{item.qty}</span>
+                  <span className="summary-price">
+                    ₱{(item.price * item.qty).toFixed(2)}
+                  </span>
                 </div>
               ))}
 
@@ -323,9 +326,30 @@ const Checkout = () => {
         }
 
         .summary-item {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 10px;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 42px minmax(112px, auto);
+          gap: 12px;
+          align-items: start;
+          margin-bottom: 14px;
+          line-height: 1.35;
+        }
+
+        .summary-name {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+
+        .summary-qty {
+          color: #aaa;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        .summary-price,
+        .summary-total span:last-child {
+          text-align: right;
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
         }
 
         .empty-summary {
@@ -340,9 +364,34 @@ const Checkout = () => {
         }
 
         .summary-total {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1fr minmax(130px, auto);
+          gap: 16px;
           color: #ff00aa;
+          align-items: center;
+          font-weight: bold;
+        }
+
+        @media (max-width: 900px) {
+          .checkout-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .checkout-right {
+            position: static;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .checkout-row {
+            flex-direction: column;
+            gap: 15px;
+          }
+
+          .summary-item {
+            grid-template-columns: minmax(0, 1fr) 38px minmax(96px, auto);
+            gap: 8px;
+          }
         }
       `}</style>
     </div>

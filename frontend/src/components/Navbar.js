@@ -545,8 +545,8 @@ const Navbar = () => {
 
         .nav-toast {
           position: fixed;
-          top: 86px;
-          right: 24px;
+          top: 78px;
+          left: 50%;
           z-index: 200;
           width: min(360px, calc(100vw - 32px));
           padding: 16px;
@@ -556,9 +556,13 @@ const Navbar = () => {
           color: white;
           text-align: left;
           cursor: pointer;
+          transform: translateX(-50%);
           box-shadow:
             0 0 24px rgba(0,229,255,0.18);
-          animation: toastIn 0.22s ease-out;
+          transform-origin: top center;
+          animation:
+            toastDrop 0.42s cubic-bezier(.2,.9,.2,1.05),
+            toastGlow 1.8s ease-in-out infinite alternate;
         }
 
         .nav-toast.message {
@@ -586,15 +590,25 @@ const Navbar = () => {
           line-height: 1.4;
         }
 
-        @keyframes toastIn {
+        @keyframes toastDrop {
           from {
             opacity: 0;
-            transform: translateY(-8px);
+            transform: translate(-50%, -34px) scaleY(0.82);
           }
 
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translate(-50%, 0) scaleY(1);
+          }
+        }
+
+        @keyframes toastGlow {
+          from {
+            filter: drop-shadow(0 0 0 rgba(0,229,255,0));
+          }
+
+          to {
+            filter: drop-shadow(0 0 10px rgba(0,229,255,0.22));
           }
         }
 
@@ -619,7 +633,6 @@ const Navbar = () => {
 
           .nav-toast {
             top: 128px;
-            right: 16px;
           }
         }
 
