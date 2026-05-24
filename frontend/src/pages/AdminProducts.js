@@ -524,6 +524,12 @@ const AdminProducts = () => {
                           ? "Sold Out"
                           : `${product.stock_count} in stock`}
                       </strong>
+                      {Number(product.stock_count || 0) > 0 &&
+                        Number(product.stock_count || 0) <= 5 && (
+                          <span className="low-stock-badge">
+                            Low Stock
+                          </span>
+                        )}
                       <small>
                         {product.sold_count || 0} sold
                       </small>
@@ -816,6 +822,17 @@ const AdminProducts = () => {
 
         .stock-meta small {
           color: #888;
+        }
+
+        .low-stock-badge {
+          padding: 5px 9px;
+          border-radius: 999px;
+          background: rgba(255, 193, 7, 0.12);
+          border: 1px solid rgba(255, 193, 7, 0.5);
+          color: #ffd37a;
+          font-size: 11px;
+          font-weight: bold;
+          text-transform: uppercase;
         }
 
         .actions {

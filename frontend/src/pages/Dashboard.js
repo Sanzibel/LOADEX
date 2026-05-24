@@ -336,6 +336,15 @@ function Dashboard({ onLogout }) {
         </div>
       </section>
 
+      <section className="store-policy">
+        <h3>
+          Official Store Policy
+        </h3>
+        <p>
+          All products are official LOADEX items. Orders are fulfilled directly by LOADEX, and receipts are issued after Cash on Delivery orders are marked as delivered.
+        </p>
+      </section>
+
       <h2 className="section-title">
         Official LOADEX Setups
       </h2>
@@ -544,6 +553,28 @@ function Dashboard({ onLogout }) {
           margin: 0;
           color: #c8d0dc;
           line-height: 1.65;
+        }
+
+        .store-policy {
+          width: 100%;
+          max-width: 1150px;
+          margin: -14px 0 34px;
+          padding: 22px 28px;
+          background: #10131d;
+          border: 1px solid rgba(168,85,247,0.22);
+          border-radius: 12px;
+        }
+
+        .store-policy h3 {
+          margin: 0 0 8px;
+          color: #c084fc;
+          font-size: 20px;
+        }
+
+        .store-policy p {
+          margin: 0;
+          color: #c8d0dc;
+          line-height: 1.6;
         }
 
         .product-controls {

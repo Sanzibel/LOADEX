@@ -13,6 +13,14 @@ const MyOrders = () => {
   const getToken = () =>
     localStorage.getItem("token");
 
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
@@ -46,7 +54,7 @@ const MyOrders = () => {
 
   const fetchOrderDetails = async (orderId) => {
     if (details[orderId]) {
-      return;
+      return details[orderId];
     }
 
     try {
@@ -68,9 +76,12 @@ const MyOrders = () => {
         [orderId]: data,
       }));
 
+      return data;
+
     } catch (err) {
       console.error(err);
       setError("Unable to load order details.");
+      return null;
     }
   };
 
@@ -115,6 +126,223 @@ const MyOrders = () => {
       console.error(err);
       setError("Unable to cancel order.");
     }
+  };
+
+  const buildReceiptHtml = (orderDetails) => {
+    const order = orderDetails.order;
+    const items = orderDetails.items || [];
+    const issuedAt = new Date().toLocaleString();
+
+    const itemRows = items
+      .map((item) => {
+        const lineTotal =
+          Number(item.price) * Number(item.qty);
+
+        return `
+          <tr>
+            <td>${escapeHtml(item.name)}</td>
+            <td>${escapeHtml(item.qty)}</td>
+            <td>${escapeHtml(formatPeso(item.price))}</td>
+            <td>${escapeHtml(formatPeso(lineTotal))}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LOADEX Receipt Order #${escapeHtml(order.id)}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 32px;
+        background: #f4f7fb;
+        color: #111827;
+        font-family: Arial, sans-serif;
+      }
+
+      .receipt {
+        max-width: 760px;
+        margin: 0 auto;
+        background: white;
+        border: 1px solid #dbe3ef;
+        border-radius: 12px;
+        padding: 32px;
+      }
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        border-bottom: 2px solid #101827;
+        padding-bottom: 18px;
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        color: #00a9c7;
+      }
+
+      h2 {
+        margin: 0;
+        color: #111827;
+      }
+
+      .muted {
+        color: #64748b;
+        line-height: 1.5;
+      }
+
+      .section {
+        margin: 22px 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+        text-align: left;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #334155;
+      }
+
+      td:last-child,
+      th:last-child {
+        text-align: right;
+      }
+
+      .total {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 24px;
+        padding-top: 18px;
+        border-top: 2px solid #101827;
+        font-size: 20px;
+        font-weight: bold;
+      }
+
+      .footer {
+        margin-top: 28px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+        color: #64748b;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="receipt">
+      <div class="top">
+        <div>
+          <h1>LOADEX</h1>
+          <strong>Official LOADEX Store Receipt</strong>
+          <div class="muted">All products are official LOADEX items.</div>
+        </div>
+        <div>
+          <h2>Order #${escapeHtml(order.id)}</h2>
+          <div class="muted">Issued: ${escapeHtml(issuedAt)}</div>
+          <div class="muted">Payment: Cash on Delivery</div>
+          <div class="muted">Status: Delivered</div>
+        </div>
+      </div>
+
+      <section class="section grid">
+        <div>
+          <strong>Customer</strong>
+          <div class="muted">${escapeHtml(order.name)}</div>
+          <div class="muted">${escapeHtml(order.phone)}</div>
+        </div>
+        <div>
+          <strong>Delivery Address</strong>
+          <div class="muted">
+            ${escapeHtml(order.address)}
+            ${order.city ? `, ${escapeHtml(order.city)}` : ""}
+            ${order.postal ? ` ${escapeHtml(order.postal)}` : ""}
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <strong>Purchased Items</strong>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRows}
+          </tbody>
+        </table>
+      </section>
+
+      <div class="total">
+        <span>Total Paid</span>
+        <span>${escapeHtml(formatPeso(order.total))}</span>
+      </div>
+
+      <div class="footer">
+        This receipt confirms a completed Cash on Delivery transaction fulfilled directly by the Official LOADEX Store.
+      </div>
+    </main>
+  </body>
+</html>`;
+  };
+
+  const downloadReceipt = async (order) => {
+    if (order.status !== "Delivered") {
+      setError("Receipts are available after an order is delivered.");
+      return;
+    }
+
+    const orderDetails =
+      details[order.id] || await fetchOrderDetails(order.id);
+
+    if (!orderDetails) {
+      return;
+    }
+
+    const receiptHtml =
+      buildReceiptHtml(orderDetails);
+
+    const blob = new Blob(
+      [receiptHtml],
+      { type: "text/html" }
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    link.href = url;
+    link.download = `loadex-receipt-order-${order.id}.html`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -182,6 +410,15 @@ const MyOrders = () => {
                         onClick={() => cancelOrder(order.id)}
                       >
                         Cancel
+                      </button>
+                    )}
+
+                    {order.status === "Delivered" && (
+                      <button
+                        className="receipt-btn"
+                        onClick={() => downloadReceipt(order)}
+                      >
+                        Download Receipt
                       </button>
                     )}
                   </div>
@@ -340,7 +577,8 @@ const MyOrders = () => {
         }
 
         .details-btn,
-        .cancel-order-btn {
+        .cancel-order-btn,
+        .receipt-btn {
           height: 36px;
           padding: 0 14px;
           border-radius: 999px;
@@ -358,6 +596,12 @@ const MyOrders = () => {
           background: transparent;
           border: 1px solid rgba(255,0,110,0.55);
           color: #ff8fbf;
+        }
+
+        .receipt-btn {
+          background: #00c2d4;
+          border: 1px solid #00c2d4;
+          color: black;
         }
 
         .divider {

@@ -6,14 +6,10 @@ const Success = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // get total passed from checkout
   const total = location.state?.total || 0;
 
-  // 🧹 CLEAR CART AFTER SUCCESS
   useEffect(() => {
     localStorage.removeItem("cart");
-
-    // 🔥 update navbar instantly
     window.dispatchEvent(new Event("cartUpdated"));
   }, []);
 
@@ -21,16 +17,23 @@ const Success = () => {
     <div className="success-page">
       <div className="success-card">
 
-        <h1>🎉 Order Placed!</h1>
-        <p>Your order was successfully processed.</p>
+        <h1>Order Placed</h1>
+        <p>Your official LOADEX order has been placed.</p>
 
         <h2>{formatPeso(total)}</h2>
 
         <p className="sub">
-          Your items will be delivered soon 🚚
+          Cash on Delivery orders receive an official receipt after the order is marked as delivered.
         </p>
 
-        <button onClick={() => navigate("/dashboard")}>
+        <button onClick={() => navigate("/my-orders")}>
+          View My Orders
+        </button>
+
+        <button
+          className="secondary-btn"
+          onClick={() => navigate("/dashboard")}
+        >
           Back to Dashboard
         </button>
 
@@ -51,7 +54,7 @@ const Success = () => {
           border: 1px solid rgba(0,255,255,0.25);
           box-shadow: 0 0 25px rgba(0,255,255,0.15);
           text-align: center;
-          width: 400px;
+          width: 420px;
         }
 
         h1 {
@@ -68,6 +71,7 @@ const Success = () => {
         .sub {
           color: #aaa;
           margin-bottom: 25px;
+          line-height: 1.5;
         }
 
         button {
@@ -78,11 +82,22 @@ const Success = () => {
           border-radius: 10px;
           font-weight: bold;
           cursor: pointer;
+          margin-top: 12px;
         }
 
         button:hover {
           background: #00e5ff;
           box-shadow: 0 0 15px #00e5ff;
+        }
+
+        .secondary-btn {
+          background: #252b3a;
+          color: #ddd;
+        }
+
+        .secondary-btn:hover {
+          background: #30384c;
+          box-shadow: none;
         }
       `}</style>
     </div>
