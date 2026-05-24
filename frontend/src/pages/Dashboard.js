@@ -307,10 +307,6 @@ function Dashboard({ onLogout }) {
 
         <div className="hero-text">
 
-          <span className="hero-kicker">
-            Official LOADEX Store
-          </span>
-
           <h1>
             Official LOADEX Store
           </h1>
@@ -337,11 +333,6 @@ function Dashboard({ onLogout }) {
           <p>
             LOADEX is an official gaming accessories brand and online store. Every item in this catalog is selected, managed, and fulfilled by LOADEX for a single-brand shopping experience.
           </p>
-        </div>
-        <div className="brand-points">
-          <span>Official products only</span>
-          <span>Admin-managed inventory</span>
-          <span>Direct LOADEX checkout</span>
         </div>
       </section>
 
@@ -533,29 +524,11 @@ function Dashboard({ onLogout }) {
 
       <style>{`
 
-        .hero-kicker {
-          display: inline-block;
-          margin-bottom: 14px;
-          padding: 8px 12px;
-          border-radius: 999px;
-          background: rgba(0,229,255,0.16);
-          border: 1px solid rgba(0,229,255,0.42);
-          color: #9ff6ff;
-          font-size: 12px;
-          font-weight: bold;
-          text-transform: uppercase;
-          letter-spacing: 0;
-        }
-
         .about-loadex {
           width: 100%;
           max-width: 1150px;
           margin-bottom: 34px;
           padding: 28px;
-          display: grid;
-          grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.6fr);
-          gap: 28px;
-          align-items: center;
           background: #0c0c14;
           border: 1px solid rgba(0,255,255,0.16);
           border-radius: 12px;
@@ -571,20 +544,6 @@ function Dashboard({ onLogout }) {
           margin: 0;
           color: #c8d0dc;
           line-height: 1.65;
-        }
-
-        .brand-points {
-          display: grid;
-          gap: 10px;
-        }
-
-        .brand-points span {
-          padding: 12px;
-          border-radius: 8px;
-          background: #10131d;
-          border: 1px solid rgba(255,255,255,0.08);
-          color: #ddd;
-          font-weight: bold;
         }
 
         .product-controls {
@@ -732,12 +691,6 @@ function Dashboard({ onLogout }) {
           margin-top: 4px;
           color: #888;
           font-weight: normal;
-        }
-
-        @media (max-width: 820px) {
-          .about-loadex {
-            grid-template-columns: 1fr;
-          }
         }
 
       `}</style>
