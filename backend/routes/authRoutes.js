@@ -5,6 +5,7 @@ const {
   registerUser,
   loginUser,
   getProfile,
+  uploadMyId,
   getPendingVerifications,
   updateVerificationStatus,
 } = require("../controllers/authController");
@@ -16,6 +17,12 @@ router.post("/register", upload.single("idImage"), registerUser);
 router.post("/login", loginUser);
 
 router.get("/profile", verifyToken, getProfile);
+router.post(
+  "/profile/id",
+  verifyToken,
+  upload.single("idImage"),
+  uploadMyId
+);
 router.get(
   "/verifications/pending",
   verifyToken,

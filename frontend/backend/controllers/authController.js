@@ -236,6 +236,57 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+exports.uploadMyId = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (req.user.role === "admin") {
+      return res.status(400).json({
+        message: "admin accounts do not need ID verification",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "please upload an image of your official ID",
+      });
+    }
+
+    const result = await db.query(
+      `
+        UPDATE loadex_users_v1
+        SET
+          id_image = $1,
+          verification_status = 'Pending'
+        WHERE id = $2
+          AND role <> 'admin'
+        RETURNING id, name, email, role, verification_status
+      `,
+      [
+        uploadedImageToDataUrl(req.file),
+        userId,
+      ]
+    );
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        message: "user not found",
+      });
+    }
+
+    res.json({
+      message: "ID submitted for admin verification.",
+      user: result[0],
+    });
+  } catch (err) {
+    console.error("UPLOAD MY ID ERROR:", err);
+
+    res.status(500).json({
+      message: err.message || "server error",
+    });
+  }
+};
+
 exports.getPendingVerifications = async (req, res) => {
   try {
     const result = await db.query(`
@@ -249,6 +300,7 @@ exports.getPendingVerifications = async (req, res) => {
       FROM loadex_users_v1
       WHERE role <> 'admin'
         AND verification_status = 'Pending'
+        AND COALESCE(id_image, '') <> ''
       ORDER BY created_at ASC
     `);
 
