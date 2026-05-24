@@ -1,10 +1,25 @@
 const db = require("../config/db");
 
-const validateProductInput = ({ name, description, price, stock_count }) => {
+const BRAND_CATEGORIES = [
+  "LOADEX Audio",
+  "LOADEX Displays",
+  "LOADEX Accessories",
+  "LOADEX Keyboards",
+  "LOADEX Controllers",
+];
+
+const validateProductInput = ({
+  name,
+  description,
+  price,
+  stock_count,
+  category,
+}) => {
   const trimmedName = String(name || "").trim();
   const trimmedDescription = String(description || "").trim();
   const numericPrice = Number(price);
   const numericStock = Number(stock_count);
+  const trimmedCategory = String(category || "").trim();
 
   if (trimmedName.length < 2) {
     return "Product name must be at least 2 characters";
@@ -23,6 +38,10 @@ const validateProductInput = ({ name, description, price, stock_count }) => {
     numericStock < 0
   ) {
     return "Product stock must be a whole number of 0 or more";
+  }
+
+  if (!BRAND_CATEGORIES.includes(trimmedCategory)) {
+    return "Please choose a valid LOADEX product category";
   }
 
   return "";
@@ -45,6 +64,7 @@ exports.getProducts = async (req, res) => {
         description,
         price,
         image,
+        category,
         stock_count,
         sold_count
       FROM loadex_products
@@ -79,6 +99,7 @@ exports.getProductById = async (req, res) => {
           description,
           price,
           image,
+          category,
           stock_count,
           sold_count
         FROM loadex_products
@@ -105,13 +126,14 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, stock_count } = req.body;
+    const { name, description, price, stock_count, category } = req.body;
 
     const validationError = validateProductInput({
       name,
       description,
       price,
       stock_count,
+      category,
     });
 
     if (validationError) {
@@ -127,15 +149,17 @@ exports.createProduct = async (req, res) => {
           description,
           price,
           image,
+          category,
           stock_count
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6)
       `,
       [
         String(name).trim(),
         String(description).trim(),
         Number(price),
         uploadedImageToDataUrl(req.file),
+        String(category).trim(),
         Number(stock_count),
       ]
     );
@@ -162,13 +186,14 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
-    const { name, description, price, stock_count } = req.body;
+    const { name, description, price, stock_count, category } = req.body;
 
     const validationError = validateProductInput({
       name,
       description,
       price,
       stock_count,
+      category,
     });
 
     if (validationError) {
@@ -206,14 +231,16 @@ exports.updateProduct = async (req, res) => {
           description = $2,
           price = $3,
           image = $4,
-          stock_count = $5
-        WHERE id = $6
+          category = $5,
+          stock_count = $6
+        WHERE id = $7
       `,
       [
         String(name).trim(),
         String(description).trim(),
         Number(price),
         image,
+        String(category).trim(),
         Number(stock_count),
         id,
       ]

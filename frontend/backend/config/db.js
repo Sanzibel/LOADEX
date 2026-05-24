@@ -8,46 +8,52 @@ let initPromise;
 
 const defaultProducts = [
   {
-    name: "RGB Gaming Mouse",
-    description: "Lightweight precision mouse with customizable RGB lighting.",
+    name: "LOADEX Core Mouse",
+    description: "Official LOADEX precision mouse with lightweight control and customizable RGB lighting.",
     price: 1299.00,
     image: "mouse.webp",
     stock_count: 12,
+    category: "LOADEX Accessories",
   },
   {
-    name: "Mechanical Gaming Keyboard",
-    description: "Tactile mechanical keyboard built for competitive gaming.",
+    name: "LOADEX Pulse Keyboard",
+    description: "Official LOADEX tactile mechanical keyboard built for competitive gaming.",
     price: 2499.00,
     image: "keyboard.avif",
     stock_count: 8,
+    category: "LOADEX Keyboards",
   },
   {
-    name: "Surround Gaming Headset",
-    description: "Comfortable headset with clear mic and immersive audio.",
+    name: "LOADEX Phantom Headset",
+    description: "Official LOADEX surround headset with a clear mic and immersive audio.",
     price: 1899.00,
     image: "headset.webp",
     stock_count: 10,
+    category: "LOADEX Audio",
   },
   {
-    name: "Gaming Monitor",
-    description: "High refresh rate display for smooth gameplay.",
+    name: "LOADEX Nova Monitor",
+    description: "Official LOADEX high-refresh display for smooth competitive play.",
     price: 8999.00,
     image: "monitor.jpg",
     stock_count: 5,
+    category: "LOADEX Displays",
   },
   {
-    name: "Wireless Controller",
-    description: "Responsive controller for PC and console-style play.",
+    name: "LOADEX Apex Controller",
+    description: "Official LOADEX responsive controller for PC and console-style play.",
     price: 1599.00,
     image: "gaming_controller.jpg",
     stock_count: 9,
+    category: "LOADEX Controllers",
   },
   {
-    name: "Ergonomic Gaming Chair",
-    description: "Supportive chair designed for long gaming sessions.",
+    name: "LOADEX Command Chair",
+    description: "Official LOADEX ergonomic chair designed for long gaming sessions.",
     price: 6999.00,
     image: "gaming_chair.jpg",
     stock_count: 4,
+    category: "LOADEX Accessories",
   },
 ];
 
@@ -114,10 +120,15 @@ const initDB = async () => {
           description TEXT NOT NULL,
           price NUMERIC(10, 2) NOT NULL,
           image TEXT DEFAULT '',
+          category TEXT NOT NULL DEFAULT 'LOADEX Accessories',
           stock_count INTEGER NOT NULL DEFAULT 10,
           sold_count INTEGER NOT NULL DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+      `,
+      `
+        ALTER TABLE loadex_products
+        ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'LOADEX Accessories'
       `,
       `
         ALTER TABLE loadex_products
@@ -126,6 +137,43 @@ const initDB = async () => {
       `
         ALTER TABLE loadex_products
         ADD COLUMN IF NOT EXISTS sold_count INTEGER NOT NULL DEFAULT 0
+      `,
+      `
+        UPDATE loadex_products
+        SET
+          name = CASE name
+            WHEN 'RGB Gaming Mouse' THEN 'LOADEX Core Mouse'
+            WHEN 'Mechanical Gaming Keyboard' THEN 'LOADEX Pulse Keyboard'
+            WHEN 'Surround Gaming Headset' THEN 'LOADEX Phantom Headset'
+            WHEN 'Gaming Monitor' THEN 'LOADEX Nova Monitor'
+            WHEN 'Wireless Controller' THEN 'LOADEX Apex Controller'
+            WHEN 'Ergonomic Gaming Chair' THEN 'LOADEX Command Chair'
+            ELSE name
+          END,
+          description = CASE name
+            WHEN 'RGB Gaming Mouse' THEN 'Official LOADEX precision mouse with lightweight control and customizable RGB lighting.'
+            WHEN 'Mechanical Gaming Keyboard' THEN 'Official LOADEX tactile mechanical keyboard built for competitive gaming.'
+            WHEN 'Surround Gaming Headset' THEN 'Official LOADEX surround headset with a clear mic and immersive audio.'
+            WHEN 'Gaming Monitor' THEN 'Official LOADEX high-refresh display for smooth competitive play.'
+            WHEN 'Wireless Controller' THEN 'Official LOADEX responsive controller for PC and console-style play.'
+            WHEN 'Ergonomic Gaming Chair' THEN 'Official LOADEX ergonomic chair designed for long gaming sessions.'
+            ELSE description
+          END,
+          category = CASE
+            WHEN image = 'keyboard.avif' THEN 'LOADEX Keyboards'
+            WHEN image = 'headset.webp' THEN 'LOADEX Audio'
+            WHEN image = 'monitor.jpg' THEN 'LOADEX Displays'
+            WHEN image = 'gaming_controller.jpg' THEN 'LOADEX Controllers'
+            ELSE 'LOADEX Accessories'
+          END
+        WHERE name IN (
+          'RGB Gaming Mouse',
+          'Mechanical Gaming Keyboard',
+          'Surround Gaming Headset',
+          'Gaming Monitor',
+          'Wireless Controller',
+          'Ergonomic Gaming Chair'
+        )
       `,
       `
         CREATE TABLE IF NOT EXISTS orders (
@@ -261,8 +309,15 @@ const initDB = async () => {
       for (const product of defaultProducts) {
         await sql.query(
           `
-            INSERT INTO loadex_products (name, description, price, image, stock_count)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO loadex_products (
+              name,
+              description,
+              price,
+              image,
+              stock_count,
+              category
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
           `,
           [
             product.name,
@@ -270,6 +325,7 @@ const initDB = async () => {
             product.price,
             product.image,
             product.stock_count,
+            product.category,
           ]
         );
       }

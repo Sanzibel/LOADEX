@@ -23,10 +23,19 @@ const imageMap = {
   "gaming_chair.jpg": chair,
 };
 
+const brandCategories = [
+  "LOADEX Audio",
+  "LOADEX Displays",
+  "LOADEX Accessories",
+  "LOADEX Keyboards",
+  "LOADEX Controllers",
+];
+
 const emptyForm = {
   name: "",
   description: "",
   price: "",
+  category: "LOADEX Accessories",
   stock_count: "0",
   image: null,
 };
@@ -183,6 +192,7 @@ const AdminProducts = () => {
       formData.append("name", form.name);
       formData.append("description", form.description);
       formData.append("price", form.price);
+      formData.append("category", form.category);
       formData.append("stock_count", form.stock_count);
 
       if (form.image) {
@@ -252,6 +262,7 @@ const AdminProducts = () => {
       name: product.name,
       description: product.description,
       price: product.price,
+      category: product.category || "LOADEX Accessories",
       stock_count: String(product.stock_count || 0),
       image: null,
 
@@ -359,6 +370,22 @@ const AdminProducts = () => {
             required
           />
 
+          <select
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            required
+          >
+            {brandCategories.map((category) => (
+              <option
+                key={category}
+                value={category}
+              >
+                {category}
+              </option>
+            ))}
+          </select>
+
           <input
             type="number"
             min="0"
@@ -448,6 +475,10 @@ const AdminProducts = () => {
                     <p>
                       {product.description}
                     </p>
+
+                    <div className="category-pill">
+                      {product.category || "LOADEX Accessories"}
+                    </div>
 
                     <span>
                       {formatPeso(product.price)}
@@ -578,6 +609,7 @@ const AdminProducts = () => {
         }
 
         .product-form input,
+        .product-form select,
         .product-form textarea {
           background: #151824;
           border: none;
@@ -665,6 +697,18 @@ const AdminProducts = () => {
         .product-card p {
           color: #aaa;
           margin-bottom: 10px;
+        }
+
+        .category-pill {
+          display: inline-block;
+          margin-bottom: 10px;
+          padding: 6px 10px;
+          border-radius: 999px;
+          background: rgba(168,85,247,0.14);
+          border: 1px solid rgba(168,85,247,0.42);
+          color: #c084fc;
+          font-size: 12px;
+          font-weight: bold;
         }
 
         .product-card span {

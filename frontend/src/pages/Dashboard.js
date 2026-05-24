@@ -42,23 +42,26 @@ const imageMap = {
 };
 
 const getProductCategory = (product) => {
+  if (product.category) {
+    return product.category;
+  }
+
   const text =
     getSearchText(product);
 
-  if (text.includes("mouse")) return "Mouse";
-  if (text.includes("keyboard")) return "Keyboard";
-  if (text.includes("headset")) return "Headset";
-  if (text.includes("monitor")) return "Monitor";
-  if (text.includes("controller")) return "Controller";
-  if (text.includes("chair")) return "Chair";
+  if (text.includes("keyboard")) return "LOADEX Keyboards";
+  if (text.includes("headset")) return "LOADEX Audio";
+  if (text.includes("monitor")) return "LOADEX Displays";
+  if (text.includes("controller")) return "LOADEX Controllers";
 
-  return "Other";
+  return "LOADEX Accessories";
 };
 
 const getSearchText = (product) =>
   [
     product.name,
     product.description,
+    product.category,
     product.price,
     product.image,
     getImageCategory(product.image),
@@ -72,12 +75,10 @@ const getImageCategory = (image = "") => {
   const value =
     image.toLowerCase();
 
-  if (value.includes("mouse")) return "Mouse";
-  if (value.includes("keyboard")) return "Keyboard";
-  if (value.includes("headset")) return "Headset";
-  if (value.includes("monitor")) return "Monitor";
-  if (value.includes("controller")) return "Controller";
-  if (value.includes("chair")) return "Chair";
+  if (value.includes("keyboard")) return "LOADEX Keyboards";
+  if (value.includes("headset")) return "LOADEX Audio";
+  if (value.includes("monitor")) return "LOADEX Displays";
+  if (value.includes("controller")) return "LOADEX Controllers";
 
   return "";
 };
@@ -213,9 +214,11 @@ function Dashboard({ onLogout }) {
 
   const categories = [
     "All",
-    ...Array.from(
-      new Set(products.map(getProductCategory))
-    ),
+    "LOADEX Audio",
+    "LOADEX Displays",
+    "LOADEX Accessories",
+    "LOADEX Keyboards",
+    "LOADEX Controllers",
   ];
 
   const filteredProducts =
@@ -304,12 +307,16 @@ function Dashboard({ onLogout }) {
 
         <div className="hero-text">
 
+          <span className="hero-kicker">
+            Official LOADEX Store
+          </span>
+
           <h1>
-            Welcome, Player.
+            Official LOADEX Store
           </h1>
 
           <p>
-            Mission Ready.
+            Gaming accessories engineered, stocked, and shipped by LOADEX.
           </p>
 
         </div>
@@ -319,7 +326,27 @@ function Dashboard({ onLogout }) {
       {/* FEATURED */}
 
       <h2 className="section-title">
-        Featured Loadouts
+        About LOADEX
+      </h2>
+
+      <section className="about-loadex">
+        <div>
+          <h3>
+            Built for focused play.
+          </h3>
+          <p>
+            LOADEX is an official gaming accessories brand and online store. Every item in this catalog is selected, managed, and fulfilled by LOADEX for a single-brand shopping experience.
+          </p>
+        </div>
+        <div className="brand-points">
+          <span>Official products only</span>
+          <span>Admin-managed inventory</span>
+          <span>Direct LOADEX checkout</span>
+        </div>
+      </section>
+
+      <h2 className="section-title">
+        Official LOADEX Setups
       </h2>
 
       <div className="featured">
@@ -332,11 +359,11 @@ function Dashboard({ onLogout }) {
           />
 
           <h3>
-            Elite Gamer Loadout
+            LOADEX Elite Setup
           </h3>
 
           <p>
-            Ultimate RGB setup
+            Official peripherals for competitive desktop play
           </p>
 
           <span>
@@ -353,11 +380,11 @@ function Dashboard({ onLogout }) {
           />
 
           <h3>
-            Stealth Warrior
+            LOADEX Stealth Setup
           </h3>
 
           <p>
-            Minimal + deadly
+            Clean gear bundle for focused sessions
           </p>
 
           <span>
@@ -371,7 +398,7 @@ function Dashboard({ onLogout }) {
       {/* PRODUCTS */}
 
       <h2 className="section-title">
-        Gaming Accessories
+        Official LOADEX Products
       </h2>
 
       {user?.verification_status !== "Verified" && (
@@ -391,7 +418,7 @@ function Dashboard({ onLogout }) {
             onChange={(e) =>
               setSearchTerm(e.target.value)
             }
-            placeholder="Search accessories"
+            placeholder="Search official LOADEX products"
           />
 
           {searchTerm && (
@@ -471,6 +498,10 @@ function Dashboard({ onLogout }) {
                   {p.description}
                 </p>
 
+                <div className="product-category">
+                  {getProductCategory(p)}
+                </div>
+
                 <span>
                   {formatPeso(p.price)}
                 </span>
@@ -501,6 +532,60 @@ function Dashboard({ onLogout }) {
       )}
 
       <style>{`
+
+        .hero-kicker {
+          display: inline-block;
+          margin-bottom: 14px;
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(0,229,255,0.16);
+          border: 1px solid rgba(0,229,255,0.42);
+          color: #9ff6ff;
+          font-size: 12px;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 0;
+        }
+
+        .about-loadex {
+          width: 100%;
+          max-width: 1150px;
+          margin-bottom: 34px;
+          padding: 28px;
+          display: grid;
+          grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.6fr);
+          gap: 28px;
+          align-items: center;
+          background: #0c0c14;
+          border: 1px solid rgba(0,255,255,0.16);
+          border-radius: 12px;
+        }
+
+        .about-loadex h3 {
+          margin: 0 0 10px;
+          color: #00e5ff;
+          font-size: 24px;
+        }
+
+        .about-loadex p {
+          margin: 0;
+          color: #c8d0dc;
+          line-height: 1.65;
+        }
+
+        .brand-points {
+          display: grid;
+          gap: 10px;
+        }
+
+        .brand-points span {
+          padding: 12px;
+          border-radius: 8px;
+          background: #10131d;
+          border: 1px solid rgba(255,255,255,0.08);
+          color: #ddd;
+          font-weight: bold;
+        }
 
         .product-controls {
           width: 100%;
@@ -630,11 +715,29 @@ function Dashboard({ onLogout }) {
           font-weight: bold;
         }
 
+        .product-category {
+          display: inline-block;
+          margin: 0 0 10px;
+          padding: 6px 10px;
+          border-radius: 999px;
+          background: rgba(168,85,247,0.14);
+          border: 1px solid rgba(168,85,247,0.42);
+          color: #c084fc;
+          font-size: 12px;
+          font-weight: bold;
+        }
+
         .stock-line small {
           display: block;
           margin-top: 4px;
           color: #888;
           font-weight: normal;
+        }
+
+        @media (max-width: 820px) {
+          .about-loadex {
+            grid-template-columns: 1fr;
+          }
         }
 
       `}</style>

@@ -397,6 +397,10 @@ const ProductDetails = () => {
             {formatPeso(product.price)}
           </h2>
 
+          <div className="brand-category">
+            {product.category || "LOADEX Accessories"}
+          </div>
+
           <div
             style={{
               marginBottom: "14px",
@@ -470,8 +474,8 @@ const ProductDetails = () => {
           >
             <li>Premium build quality</li>
             <li>RGB customization</li>
+            <li>Official LOADEX product support</li>
             <li>Optimized for competitive gaming</li>
-            <li>1-year warranty included</li>
           </ul>
 
           {verificationStatus !== "Verified" && (
@@ -702,6 +706,18 @@ const ProductDetails = () => {
           color: #ffd37a;
           font-weight: bold;
           line-height: 1.4;
+        }
+
+        .brand-category {
+          display: inline-block;
+          margin: 0 0 18px;
+          padding: 7px 12px;
+          border-radius: 999px;
+          background: rgba(168,85,247,0.14);
+          border: 1px solid rgba(168,85,247,0.42);
+          color: #c084fc;
+          font-size: 13px;
+          font-weight: bold;
         }
 
         .review-card {
