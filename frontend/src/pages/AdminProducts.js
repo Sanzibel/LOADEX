@@ -342,66 +342,100 @@ const AdminProducts = () => {
           onSubmit={handleSubmit}
         >
 
-          <input
-            type="text"
-            name="name"
-            placeholder="Product Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
+          <div className="form-header">
+            <h2>
+              {editingId
+                ? "Edit Official LOADEX Product"
+                : "Add Official LOADEX Product"}
+            </h2>
+            <p>
+              Update the product catalog, brand category, price, stock, and display image.
+            </p>
+          </div>
 
-          <textarea
-            name="description"
-            placeholder="Description"
-            value={form.description}
-            onChange={handleChange}
-            required
-          />
+          <label className="field-group">
+            <span>Product Name</span>
+            <input
+              type="text"
+              name="name"
+              placeholder="Example: LOADEX Core Mouse"
+              value={form.name}
+              onChange={handleChange}
+              required
+            />
+          </label>
 
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
-            name="price"
-            placeholder="Price"
-            value={form.price}
-            onChange={handleChange}
-            required
-          />
+          <label className="field-group">
+            <span>Description</span>
+            <textarea
+              name="description"
+              placeholder="Short product description shown to customers"
+              value={form.description}
+              onChange={handleChange}
+              required
+            />
+          </label>
 
-          <select
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            required
-          >
-            {brandCategories.map((category) => (
-              <option
-                key={category}
-                value={category}
+          <div className="form-grid">
+            <label className="field-group">
+              <span>Price</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                name="price"
+                placeholder="0.00"
+                value={form.price}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label className="field-group">
+              <span>Product Category</span>
+              <select
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                required
               >
-                {category}
-              </option>
-            ))}
-          </select>
+                {brandCategories.map((category) => (
+                  <option
+                    key={category}
+                    value={category}
+                  >
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <input
-            type="number"
-            min="0"
-            step="1"
-            name="stock_count"
-            placeholder="Stock Count"
-            value={form.stock_count}
-            onChange={handleChange}
-            required
-          />
+            <label className="field-group">
+              <span>Stock Count</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                name="stock_count"
+                placeholder="Available quantity"
+                value={form.stock_count}
+                onChange={handleChange}
+                required
+              />
+            </label>
+          </div>
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-          />
+          <label className="field-group image-field">
+            <span>Product Image</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+            <small>
+              Leave blank while editing to keep the current product image.
+            </small>
+          </label>
 
           {preview && (
 
@@ -608,6 +642,44 @@ const AdminProducts = () => {
           border: 1px solid rgba(0,255,255,0.15);
         }
 
+        .form-header {
+          padding-bottom: 6px;
+        }
+
+        .form-header h2 {
+          margin: 0 0 8px;
+          color: #00e5ff;
+          font-size: 24px;
+        }
+
+        .form-header p {
+          margin: 0;
+          color: #9aa4b2;
+          line-height: 1.45;
+        }
+
+        .form-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 15px;
+        }
+
+        .field-group {
+          display: grid;
+          gap: 8px;
+        }
+
+        .field-group span {
+          color: #c8d0dc;
+          font-size: 13px;
+          font-weight: bold;
+        }
+
+        .field-group small {
+          color: #7d8796;
+          font-size: 12px;
+        }
+
         .product-form input,
         .product-form select,
         .product-form textarea {
@@ -621,6 +693,20 @@ const AdminProducts = () => {
 
         .product-form textarea {
           min-height: 100px;
+        }
+
+        .product-form input:focus,
+        .product-form select:focus,
+        .product-form textarea:focus {
+          border: 1px solid rgba(0,229,255,0.7);
+          box-shadow: 0 0 12px rgba(0,229,255,0.18);
+        }
+
+        .image-field {
+          padding: 14px;
+          border-radius: 10px;
+          background: #10131d;
+          border: 1px solid rgba(255,255,255,0.08);
         }
 
         .form-actions {
@@ -788,6 +874,12 @@ const AdminProducts = () => {
           justify-content: flex-end;
           gap: 12px;
           margin-top: 22px;
+        }
+
+        @media (max-width: 820px) {
+          .form-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
       `}</style>
