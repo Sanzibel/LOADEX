@@ -390,7 +390,8 @@ exports.getAdminStats = async (req, res) => {
         (SELECT COUNT(*)::int FROM orders) AS "totalOrders",
         (SELECT COUNT(*)::int FROM orders WHERE status = 'Pending') AS "pendingOrders",
         (SELECT COUNT(*)::int FROM loadex_users_v1) AS "totalUsers",
-        (SELECT COUNT(*)::int FROM loadex_users_v1 WHERE verification_status = 'Pending' AND role <> 'admin') AS "pendingVerifications"
+        (SELECT COUNT(*)::int FROM loadex_users_v1 WHERE verification_status = 'Pending' AND role <> 'admin') AS "pendingVerifications",
+        (SELECT COUNT(*)::int FROM loadex_products WHERE stock_count > 0 AND stock_count <= 5) AS "lowStockItems"
     `);
 
     res.json(result[0]);

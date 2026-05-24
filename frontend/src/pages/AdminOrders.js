@@ -26,6 +26,7 @@ const AdminOrders = () => {
     pendingOrders: 0,
     totalUsers: 0,
     pendingVerifications: 0,
+    lowStockItems: 0,
   });
   const [pendingUsers, setPendingUsers] = useState([]);
 
@@ -248,9 +249,23 @@ const AdminOrders = () => {
 
       <div className="admin-container">
 
-        <h1 className="admin-title">
-          Admin Orders
-        </h1>
+        <section className="store-overview">
+          <div>
+            <span className="overview-kicker">
+              Official LOADEX Admin
+            </span>
+            <h1>
+              Official Store Management
+            </h1>
+            <p>
+              Manage LOADEX products, inventory, orders, customer verification, and support from one store owner dashboard.
+            </p>
+          </div>
+          <div className="overview-status">
+            <strong>{stats.lowStockItems || 0}</strong>
+            <span>low-stock official products</span>
+          </div>
+        </section>
 
         {error && (
           <div className="error-box">
@@ -260,7 +275,7 @@ const AdminOrders = () => {
 
         <div className="stats-grid">
           <div className="stat-card">
-            <span>Products</span>
+            <span>Official Products</span>
             <strong>{stats.totalProducts}</strong>
           </div>
           <div className="stat-card">
@@ -278,6 +293,10 @@ const AdminOrders = () => {
           <div className="stat-card">
             <span>ID Checks</span>
             <strong>{stats.pendingVerifications || 0}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Low Stock</span>
+            <strong>{stats.lowStockItems || 0}</strong>
           </div>
         </div>
 
@@ -503,15 +522,62 @@ const AdminOrders = () => {
           max-width: 1000px;
         }
 
-        .admin-title {
+        .store-overview {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 220px;
+          gap: 24px;
+          align-items: center;
+          margin-bottom: 28px;
+          padding: 26px;
+          background: #0c0c14;
+          border: 1px solid rgba(0,255,255,0.2);
+          border-radius: 14px;
+          box-shadow: 0 0 22px rgba(0,255,255,0.08);
+        }
+
+        .overview-kicker {
+          display: inline-block;
+          margin-bottom: 10px;
+          color: #00ffaa;
+          font-size: 12px;
+          font-weight: bold;
+          text-transform: uppercase;
+        }
+
+        .store-overview h1 {
+          margin: 0 0 12px;
           color: #ff00aa;
+          font-size: 38px;
+          text-shadow: 0 0 15px #ff00aa;
+        }
 
-          margin-bottom: 35px;
+        .store-overview p {
+          margin: 0;
+          color: #c8d0dc;
+          line-height: 1.55;
+        }
 
-          font-size: 40px;
+        .overview-status {
+          min-height: 132px;
+          display: grid;
+          place-items: center;
+          text-align: center;
+          padding: 18px;
+          border-radius: 12px;
+          background: #10131d;
+          border: 1px solid rgba(255,255,255,0.08);
+        }
 
-          text-shadow:
-            0 0 15px #ff00aa;
+        .overview-status strong {
+          color: #00e5ff;
+          font-size: 42px;
+          text-shadow: 0 0 12px rgba(0,229,255,0.6);
+        }
+
+        .overview-status span {
+          color: #aaa;
+          font-size: 13px;
+          line-height: 1.35;
         }
 
         .error-box {
@@ -535,7 +601,7 @@ const AdminOrders = () => {
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           gap: 16px;
           margin-bottom: 28px;
         }
@@ -559,6 +625,16 @@ const AdminOrders = () => {
           color: #00e5ff;
           font-size: 30px;
           text-shadow: 0 0 12px rgba(0,229,255,0.55);
+        }
+
+        @media (max-width: 900px) {
+          .store-overview {
+            grid-template-columns: 1fr;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
         }
 
         .verification-section {
