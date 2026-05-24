@@ -25,6 +25,9 @@ const Cart = () => {
   const [cart, setCart] =
     useState([]);
 
+  const verificationStatus =
+    localStorage.getItem("verificationStatus") || "Pending";
+
   const navigate =
     useNavigate();
 
@@ -48,6 +51,9 @@ const Cart = () => {
 
     // uploaded images
     if (
+      image.startsWith("data:") ||
+      image.startsWith("http://") ||
+      image.startsWith("https://") ||
       image.includes("/uploads/")
     ) {
 
@@ -80,7 +86,10 @@ const Cart = () => {
         item.id === id
           ? {
               ...item,
-              qty: item.qty + 1,
+              qty: Math.min(
+                item.qty + 1,
+                Number(item.stock_count || item.qty + 1)
+              ),
             }
           : item
       )
@@ -125,6 +134,14 @@ const Cart = () => {
   const isCartEmpty =
     cart.length === 0;
 
+  const hasSoldOutItem =
+    cart.some((item) => Number(item.stock_count || 0) <= 0);
+
+  const checkoutLocked =
+    isCartEmpty ||
+    hasSoldOutItem ||
+    verificationStatus !== "Verified";
+
   return (
     <div className="cart-page">
 
@@ -137,6 +154,14 @@ const Cart = () => {
         {isCartEmpty && (
           <div className="empty-cart">
             Your cart is empty.
+          </div>
+        )}
+
+        {verificationStatus !== "Verified" && !isCartEmpty && (
+          <div className="cart-warning">
+            {verificationStatus === "Declined"
+              ? "Your ID verification was declined. Please contact admin before checkout."
+              : "Your account is pending ID verification. Checkout unlocks after admin approval."}
           </div>
         )}
 
@@ -165,6 +190,12 @@ const Cart = () => {
                   {formatPeso(item.price)}
                 </p>
 
+                <p className={Number(item.stock_count || 0) <= 0 ? "sold-out-text" : "stock-text"}>
+                  {Number(item.stock_count || 0) <= 0
+                    ? "Sold Out"
+                    : `${item.stock_count} in stock`}
+                </p>
+
               </div>
 
             </div>
@@ -189,6 +220,7 @@ const Cart = () => {
                   onClick={() =>
                     increaseQty(item.id)
                   }
+                  disabled={item.qty >= Number(item.stock_count || item.qty)}
                 >
                   +
                 </button>
@@ -239,13 +271,13 @@ const Cart = () => {
 
             <button
               className={`btn-primary ${
-                isCartEmpty
+                checkoutLocked
                   ? "disabled"
                   : ""
               }`}
-              disabled={isCartEmpty}
+              disabled={checkoutLocked}
               onClick={() =>
-                !isCartEmpty &&
+                !checkoutLocked &&
                 navigate("/checkout")
               }
             >
@@ -288,6 +320,16 @@ const Cart = () => {
           text-align: center;
         }
 
+        .cart-warning {
+          margin-bottom: 24px;
+          padding: 14px 18px;
+          background: rgba(255, 193, 7, 0.12);
+          border: 1px solid rgba(255, 193, 7, 0.45);
+          border-radius: 10px;
+          color: #ffd37a;
+          font-weight: bold;
+        }
+
         .cart-card {
           display: flex;
           justify-content: space-between;
@@ -315,6 +357,21 @@ const Cart = () => {
 
         .cart-price {
           color: #00e5ff;
+        }
+
+        .stock-text,
+        .sold-out-text {
+          margin: 6px 0 0;
+          font-size: 13px;
+          font-weight: bold;
+        }
+
+        .stock-text {
+          color: #00ffaa;
+        }
+
+        .sold-out-text {
+          color: #ff8fbf;
         }
 
         .cart-right {

@@ -12,36 +12,42 @@ const defaultProducts = [
     description: "Lightweight precision mouse with customizable RGB lighting.",
     price: 1299.00,
     image: "mouse.webp",
+    stock_count: 12,
   },
   {
     name: "Mechanical Gaming Keyboard",
     description: "Tactile mechanical keyboard built for competitive gaming.",
     price: 2499.00,
     image: "keyboard.avif",
+    stock_count: 8,
   },
   {
     name: "Surround Gaming Headset",
     description: "Comfortable headset with clear mic and immersive audio.",
     price: 1899.00,
     image: "headset.webp",
+    stock_count: 10,
   },
   {
     name: "Gaming Monitor",
     description: "High refresh rate display for smooth gameplay.",
     price: 8999.00,
     image: "monitor.jpg",
+    stock_count: 5,
   },
   {
     name: "Wireless Controller",
     description: "Responsive controller for PC and console-style play.",
     price: 1599.00,
     image: "gaming_controller.jpg",
+    stock_count: 9,
   },
   {
     name: "Ergonomic Gaming Chair",
     description: "Supportive chair designed for long gaming sessions.",
     price: 6999.00,
     image: "gaming_chair.jpg",
+    stock_count: 4,
   },
 ];
 
@@ -82,8 +88,24 @@ const initDB = async () => {
           email TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
           role TEXT NOT NULL DEFAULT 'user',
+          id_image TEXT DEFAULT '',
+          verification_status TEXT NOT NULL DEFAULT 'Pending',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+      `,
+      `
+        ALTER TABLE loadex_users_v1
+        ADD COLUMN IF NOT EXISTS id_image TEXT DEFAULT ''
+      `,
+      `
+        ALTER TABLE loadex_users_v1
+        ADD COLUMN IF NOT EXISTS verification_status TEXT NOT NULL DEFAULT 'Pending'
+      `,
+      `
+        UPDATE loadex_users_v1
+        SET verification_status = 'Verified'
+        WHERE role = 'admin'
+          AND verification_status <> 'Verified'
       `,
       `
         CREATE TABLE IF NOT EXISTS loadex_products (
@@ -92,8 +114,18 @@ const initDB = async () => {
           description TEXT NOT NULL,
           price NUMERIC(10, 2) NOT NULL,
           image TEXT DEFAULT '',
+          stock_count INTEGER NOT NULL DEFAULT 10,
+          sold_count INTEGER NOT NULL DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+      `,
+      `
+        ALTER TABLE loadex_products
+        ADD COLUMN IF NOT EXISTS stock_count INTEGER NOT NULL DEFAULT 10
+      `,
+      `
+        ALTER TABLE loadex_products
+        ADD COLUMN IF NOT EXISTS sold_count INTEGER NOT NULL DEFAULT 0
       `,
       `
         CREATE TABLE IF NOT EXISTS orders (
@@ -209,8 +241,14 @@ const initDB = async () => {
 
       await sql.query(
         `
-          INSERT INTO loadex_users_v1 (name, email, password, role)
-          VALUES ($1, $2, $3, 'admin')
+          INSERT INTO loadex_users_v1 (
+            name,
+            email,
+            password,
+            role,
+            verification_status
+          )
+          VALUES ($1, $2, $3, 'admin', 'Verified')
         `,
         [adminName, adminEmail, hashedPassword]
       );
@@ -223,14 +261,15 @@ const initDB = async () => {
       for (const product of defaultProducts) {
         await sql.query(
           `
-            INSERT INTO loadex_products (name, description, price, image)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO loadex_products (name, description, price, image, stock_count)
+            VALUES ($1, $2, $3, $4, $5)
           `,
           [
             product.name,
             product.description,
             product.price,
             product.image,
+            product.stock_count,
           ]
         );
       }

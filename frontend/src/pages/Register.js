@@ -8,6 +8,7 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [idImage, setIdImage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({
     type: "",
@@ -78,14 +79,27 @@ function Register() {
       return;
     }
 
+    if (!idImage) {
+      setMessage({
+        type: "error",
+        text: "Please upload an image of your official ID.",
+      });
+      return;
+    }
+
     try {
       setSubmitting(true);
 
-      const res = await axios.post(apiUrl("/api/auth/register"), {
-        name: cleanName,
-        email: cleanEmail,
-        password,
-      });
+      const formData = new FormData();
+      formData.append("name", cleanName);
+      formData.append("email", cleanEmail);
+      formData.append("password", password);
+      formData.append("idImage", idImage);
+
+      const res = await axios.post(
+        apiUrl("/api/auth/register"),
+        formData
+      );
 
       console.log("REGISTER SUCCESS:", res.data);
 
@@ -156,6 +170,22 @@ function Register() {
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
 
+        <label className="id-upload">
+          <span>Official ID image</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              setIdImage(e.target.files?.[0] || null)
+            }
+          />
+          <small>
+            {idImage
+              ? idImage.name
+              : "Required for admin verification."}
+          </small>
+        </label>
+
         <div className="password-panel">
           <p className="password-help">
             Password must include:
@@ -216,6 +246,26 @@ function Register() {
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px;
             background: rgba(255,255,255,0.025);
+          }
+
+          .id-upload {
+            display: grid;
+            gap: 8px;
+            margin: 10px 0 4px;
+            padding: 12px;
+            border: 1px solid rgba(0,255,255,0.18);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.025);
+            color: #c8d0dc;
+            font-size: 13px;
+          }
+
+          .id-upload input {
+            color: #9aa4b2;
+          }
+
+          .id-upload small {
+            color: #7d8796;
           }
 
           .password-help {

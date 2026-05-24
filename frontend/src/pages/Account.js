@@ -63,6 +63,10 @@ const Account = ({ onLogout }) => {
       }
 
       setUser(data.user);
+      localStorage.setItem(
+        "verificationStatus",
+        data.user.verification_status || "Pending"
+      );
 
     } catch (err) {
 
@@ -134,6 +138,12 @@ const Account = ({ onLogout }) => {
           <div className="role-badge">
             {user.role}
           </div>
+
+          {user.role !== "admin" && (
+            <div className={`verify-badge ${user.verification_status}`}>
+              ID Verification: {user.verification_status || "Pending"}
+            </div>
+          )}
 
           <div className="button-group">
 
@@ -273,6 +283,34 @@ const accountStyles = `
     text-transform: uppercase;
     font-size: 13px;
     font-weight: bold;
+  }
+
+  .verify-badge {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 999px;
+    margin-left: 10px;
+    margin-bottom: 35px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .verify-badge.Verified {
+    background: rgba(0, 255, 170, 0.12);
+    border: 1px solid rgba(0, 255, 170, 0.5);
+    color: #00ffaa;
+  }
+
+  .verify-badge.Pending {
+    background: rgba(255, 193, 7, 0.12);
+    border: 1px solid rgba(255, 193, 7, 0.45);
+    color: #ffd37a;
+  }
+
+  .verify-badge.Declined {
+    background: rgba(255, 0, 110, 0.14);
+    border: 1px solid rgba(255, 0, 110, 0.5);
+    color: #ff8fbf;
   }
 
   .button-group {

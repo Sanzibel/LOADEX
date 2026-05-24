@@ -135,6 +135,10 @@ function Dashboard({ onLogout }) {
         if (res.ok) {
 
           setUser(data.user);
+          localStorage.setItem(
+            "verificationStatus",
+            data.user.verification_status || "Pending"
+          );
 
         } else {
 
@@ -370,6 +374,14 @@ function Dashboard({ onLogout }) {
         Gaming Accessories
       </h2>
 
+      {user?.verification_status !== "Verified" && (
+        <div className="verification-lock">
+          {user?.verification_status === "Declined"
+            ? "Your ID verification was declined. Please contact admin before buying."
+            : "Your account is pending ID verification. You can browse products, but checkout is locked until admin approval."}
+        </div>
+      )}
+
       <div className="product-controls">
 
         <div className="search-group">
@@ -422,35 +434,61 @@ function Dashboard({ onLogout }) {
 
         {filteredProducts.map((p) => (
 
-          <div
-            className="card"
-            key={p.id}
-            onClick={() =>
-              navigate(`/product/${p.id}`)
-            }
-            style={{
-              cursor: "pointer",
-            }}
-          >
+          (() => {
+            const stock =
+              Number(p.stock_count || 0);
 
-            <img
-              src={getImageSrc(p.image)}
-              alt={p.name}
-            />
+            return (
+              <div
+                className={`card ${stock <= 0 ? "sold-out-card" : ""}`}
+                key={p.id}
+                onClick={() =>
+                  navigate(`/product/${p.id}`)
+                }
+                style={{
+                  cursor: "pointer",
+                }}
+              >
 
-            <h4>
-              {p.name}
-            </h4>
+                <div className="product-image-wrap">
+                  <img
+                    src={getImageSrc(p.image)}
+                    alt={p.name}
+                  />
 
-            <p>
-              {p.description}
-            </p>
+                  {stock <= 0 && (
+                    <span className="sold-out-label">
+                      Sold Out
+                    </span>
+                  )}
+                </div>
 
-            <span>
-              {formatPeso(p.price)}
-            </span>
+                <h4>
+                  {p.name}
+                </h4>
 
-          </div>
+                <p>
+                  {p.description}
+                </p>
+
+                <span>
+                  {formatPeso(p.price)}
+                </span>
+
+                <div className="stock-line">
+                  {stock > 0
+                    ? `${stock} in stock`
+                    : "Unavailable"}
+                  {Number(p.sold_count || 0) > 0 && (
+                    <small>
+                      {p.sold_count} sold
+                    </small>
+                  )}
+                </div>
+
+              </div>
+            );
+          })()
 
         ))}
 
@@ -551,6 +589,52 @@ function Dashboard({ onLogout }) {
           border: 1px solid rgba(0,255,255,0.18);
           color: #888;
           text-align: center;
+        }
+
+        .verification-lock {
+          width: 100%;
+          max-width: 1150px;
+          margin: 0 0 22px;
+          padding: 14px 16px;
+          border-radius: 10px;
+          background: rgba(255, 193, 7, 0.12);
+          border: 1px solid rgba(255, 193, 7, 0.45);
+          color: #ffd37a;
+          font-weight: bold;
+        }
+
+        .product-image-wrap {
+          position: relative;
+        }
+
+        .sold-out-label {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          padding: 6px 10px;
+          border-radius: 6px;
+          background: rgba(255, 0, 110, 0.92);
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+        }
+
+        .sold-out-card {
+          opacity: 0.68;
+        }
+
+        .stock-line {
+          margin-top: 10px;
+          color: #00ffaa;
+          font-size: 13px;
+          font-weight: bold;
+        }
+
+        .stock-line small {
+          display: block;
+          margin-top: 4px;
+          color: #888;
+          font-weight: normal;
         }
 
       `}</style>

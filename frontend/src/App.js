@@ -190,6 +190,8 @@ function App() {
 
     localStorage.removeItem("role");
 
+    localStorage.removeItem("verificationStatus");
+
     setToken(null);
   }, []);
 

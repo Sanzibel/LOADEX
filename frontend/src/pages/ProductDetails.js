@@ -29,6 +29,10 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState(
+    localStorage.getItem("verificationStatus") || "Pending"
+  );
+  const [cartMessage, setCartMessage] = useState("");
   const [reviewData, setReviewData] = useState({
     summary: {
       average_rating: 0,
@@ -81,6 +85,28 @@ const ProductDetails = () => {
         const token = localStorage.getItem("token");
 
         if (token) {
+          const profileRes = await fetch(
+            apiUrl("/api/auth/profile"),
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          const profileData = await profileRes.json();
+
+          if (profileRes.ok) {
+            const nextStatus =
+              profileData.user?.verification_status || "Pending";
+
+            setVerificationStatus(nextStatus);
+            localStorage.setItem(
+              "verificationStatus",
+              nextStatus
+            );
+          }
+
           const eligibilityRes = await fetch(
             apiUrl(`/api/reviews/products/${id}/my`),
             {
@@ -168,6 +194,22 @@ const ProductDetails = () => {
   };
 
   const handleAddToCart = () => {
+    const stock =
+      Number(product.stock_count || 0);
+
+    if (verificationStatus !== "Verified") {
+      setCartMessage(
+        verificationStatus === "Declined"
+          ? "Your ID verification was declined. Please contact admin before buying."
+          : "Your account is pending ID verification. Admin approval is required before buying."
+      );
+      return;
+    }
+
+    if (stock <= 0) {
+      setCartMessage("This product is sold out.");
+      return;
+    }
 
     const cart =
       JSON.parse(
@@ -180,6 +222,10 @@ const ProductDetails = () => {
       );
 
     if (index !== -1) {
+      if (cart[index].qty >= stock) {
+        setCartMessage(`Only ${stock} item(s) available.`);
+        return;
+      }
 
       cart[index].qty += 1;
 
@@ -255,6 +301,15 @@ const ProductDetails = () => {
 
   const reviewCount =
     Number(reviewData.summary?.review_count || 0);
+
+  const stock =
+    Number(product?.stock_count || 0);
+
+  const isSoldOut =
+    stock <= 0;
+
+  const canBuy =
+    verificationStatus === "Verified" && !isSoldOut;
 
   if (loading) {
     return (
@@ -344,6 +399,20 @@ const ProductDetails = () => {
 
           <div
             style={{
+              marginBottom: "14px",
+              color: isSoldOut ? "#ff8fbf" : "#00ffaa",
+              fontWeight: "bold",
+            }}
+          >
+            {isSoldOut
+              ? "Sold Out"
+              : `${stock} in stock`}
+            {Number(product.sold_count || 0) > 0 &&
+              ` - ${product.sold_count} sold`}
+          </div>
+
+          <div
+            style={{
               marginBottom: "20px",
               color: "#00ffaa",
               fontWeight: "bold",
@@ -405,22 +474,38 @@ const ProductDetails = () => {
             <li>1-year warranty included</li>
           </ul>
 
+          {verificationStatus !== "Verified" && (
+            <div className="buy-note">
+              {verificationStatus === "Declined"
+                ? "Your ID verification was declined. Please contact admin before buying."
+                : "Your ID verification is pending. You can view products, but buying is locked until admin approval."}
+            </div>
+          )}
+
+          {cartMessage && (
+            <div className="buy-note">
+              {cartMessage}
+            </div>
+          )}
+
           {/* BUTTON */}
           <button
             onClick={handleAddToCart}
+            disabled={!canBuy}
             style={{
               marginTop: "30px",
               width: "100%",
               padding: "18px",
-              background: "#00c2d4",
+              background: canBuy ? "#00c2d4" : "#252b3a",
               border: "none",
               borderRadius: "6px",
               fontSize: "16px",
-              cursor: "pointer",
+              cursor: canBuy ? "pointer" : "not-allowed",
               fontWeight: "bold",
+              color: canBuy ? "black" : "#888",
             }}
           >
-            🛒 Add to Cart
+            {isSoldOut ? "Sold Out" : "Add to Cart"}
           </button>
 
         </div>
@@ -606,6 +691,17 @@ const ProductDetails = () => {
         .review-list {
           display: grid;
           gap: 14px;
+        }
+
+        .buy-note {
+          margin-top: 18px;
+          padding: 14px;
+          border-radius: 10px;
+          background: rgba(255, 193, 7, 0.12);
+          border: 1px solid rgba(255, 193, 7, 0.45);
+          color: #ffd37a;
+          font-weight: bold;
+          line-height: 1.4;
         }
 
         .review-card {

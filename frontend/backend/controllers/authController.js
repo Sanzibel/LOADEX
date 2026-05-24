@@ -31,6 +31,14 @@ const signUserToken = (user) =>
     }
   );
 
+const uploadedImageToDataUrl = (file) => {
+  if (!file) {
+    return "";
+  }
+
+  return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+};
+
 exports.registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -41,6 +49,12 @@ exports.registerUser = async (req, res) => {
     if (!cleanName || !cleanEmail || !password) {
       return res.status(400).json({
         message: "all fields are required",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "please upload an image of your official ID",
       });
     }
 
@@ -82,10 +96,21 @@ exports.registerUser = async (req, res) => {
 
     await db.query(
       `
-        INSERT INTO loadex_users_v1 (name, email, password)
-        VALUES ($1, $2, $3)
+        INSERT INTO loadex_users_v1 (
+          name,
+          email,
+          password,
+          id_image,
+          verification_status
+        )
+        VALUES ($1, $2, $3, $4, 'Pending')
       `,
-      [cleanName, cleanEmail, hashedPassword]
+      [
+        cleanName,
+        cleanEmail,
+        hashedPassword,
+        uploadedImageToDataUrl(req.file),
+      ]
     );
 
     res.status(201).json({
@@ -153,6 +178,8 @@ exports.loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role || "user",
+        verification_status:
+          user.verification_status || "Pending",
       },
     });
   } catch (err) {
@@ -174,7 +201,8 @@ exports.getProfile = async (req, res) => {
           id,
           name,
           email,
-          role
+          role,
+          verification_status
         FROM loadex_users_v1
         WHERE id = $1
       `,
@@ -195,10 +223,85 @@ exports.getProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role || "user",
+        verification_status:
+          user.verification_status || "Pending",
       },
     });
   } catch (err) {
     console.error("PROFILE ERROR:", err);
+
+    res.status(500).json({
+      message: err.message || "server error",
+    });
+  }
+};
+
+exports.getPendingVerifications = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT
+        id,
+        name,
+        email,
+        id_image,
+        verification_status,
+        created_at
+      FROM loadex_users_v1
+      WHERE role <> 'admin'
+        AND verification_status = 'Pending'
+      ORDER BY created_at ASC
+    `);
+
+    res.json(result);
+  } catch (err) {
+    console.error("GET PENDING VERIFICATIONS ERROR:", err);
+
+    res.status(500).json({
+      message: err.message || "server error",
+    });
+  }
+};
+
+exports.updateVerificationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (Number.isNaN(Number(id))) {
+      return res.status(400).json({
+        message: "invalid user id",
+      });
+    }
+
+    if (!["Verified", "Declined"].includes(status)) {
+      return res.status(400).json({
+        message: "verification status must be Verified or Declined",
+      });
+    }
+
+    const result = await db.query(
+      `
+        UPDATE loadex_users_v1
+        SET verification_status = $1
+        WHERE id = $2
+          AND role <> 'admin'
+        RETURNING id, name, email, verification_status
+      `,
+      [status, id]
+    );
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        message: "user not found",
+      });
+    }
+
+    res.json({
+      message: `User marked as ${status}.`,
+      user: result[0],
+    });
+  } catch (err) {
+    console.error("UPDATE VERIFICATION ERROR:", err);
 
     res.status(500).json({
       message: err.message || "server error",

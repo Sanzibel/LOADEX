@@ -27,6 +27,7 @@ const emptyForm = {
   name: "",
   description: "",
   price: "",
+  stock_count: "0",
   image: null,
 };
 
@@ -182,6 +183,7 @@ const AdminProducts = () => {
       formData.append("name", form.name);
       formData.append("description", form.description);
       formData.append("price", form.price);
+      formData.append("stock_count", form.stock_count);
 
       if (form.image) {
 
@@ -250,6 +252,7 @@ const AdminProducts = () => {
       name: product.name,
       description: product.description,
       price: product.price,
+      stock_count: String(product.stock_count || 0),
       image: null,
 
     });
@@ -357,6 +360,17 @@ const AdminProducts = () => {
           />
 
           <input
+            type="number"
+            min="0"
+            step="1"
+            name="stock_count"
+            placeholder="Stock Count"
+            value={form.stock_count}
+            onChange={handleChange}
+            required
+          />
+
+          <input
             type="file"
             accept="image/*"
             onChange={handleImageChange}
@@ -438,6 +452,17 @@ const AdminProducts = () => {
                     <span>
                       {formatPeso(product.price)}
                     </span>
+
+                    <div className="stock-meta">
+                      <strong>
+                        {Number(product.stock_count || 0) <= 0
+                          ? "Sold Out"
+                          : `${product.stock_count} in stock`}
+                      </strong>
+                      <small>
+                        {product.sold_count || 0} sold
+                      </small>
+                    </div>
 
                   </div>
 
@@ -645,6 +670,22 @@ const AdminProducts = () => {
         .product-card span {
           color: #00ffaa;
           font-weight: bold;
+        }
+
+        .stock-meta {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          margin-top: 8px;
+          color: #ddd;
+        }
+
+        .stock-meta strong {
+          color: #00e5ff;
+        }
+
+        .stock-meta small {
+          color: #888;
         }
 
         .actions {

@@ -1,9 +1,10 @@
 const db = require("../config/db");
 
-const validateProductInput = ({ name, description, price }) => {
+const validateProductInput = ({ name, description, price, stock_count }) => {
   const trimmedName = String(name || "").trim();
   const trimmedDescription = String(description || "").trim();
   const numericPrice = Number(price);
+  const numericStock = Number(stock_count);
 
   if (trimmedName.length < 2) {
     return "Product name must be at least 2 characters";
@@ -15,6 +16,13 @@ const validateProductInput = ({ name, description, price }) => {
 
   if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
     return "Product price must be greater than 0";
+  }
+
+  if (
+    !Number.isInteger(numericStock) ||
+    numericStock < 0
+  ) {
+    return "Product stock must be a whole number of 0 or more";
   }
 
   return "";
@@ -36,7 +44,9 @@ exports.getProducts = async (req, res) => {
         name,
         description,
         price,
-        image
+        image,
+        stock_count,
+        sold_count
       FROM loadex_products
       ORDER BY id DESC
     `);
@@ -68,7 +78,9 @@ exports.getProductById = async (req, res) => {
           name,
           description,
           price,
-          image
+          image,
+          stock_count,
+          sold_count
         FROM loadex_products
         WHERE id = $1
       `,
@@ -93,12 +105,13 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price } = req.body;
+    const { name, description, price, stock_count } = req.body;
 
     const validationError = validateProductInput({
       name,
       description,
       price,
+      stock_count,
     });
 
     if (validationError) {
@@ -109,14 +122,21 @@ exports.createProduct = async (req, res) => {
 
     await db.query(
       `
-        INSERT INTO loadex_products (name, description, price, image)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO loadex_products (
+          name,
+          description,
+          price,
+          image,
+          stock_count
+        )
+        VALUES ($1, $2, $3, $4, $5)
       `,
       [
         String(name).trim(),
         String(description).trim(),
         Number(price),
         uploadedImageToDataUrl(req.file),
+        Number(stock_count),
       ]
     );
 
@@ -142,12 +162,13 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
-    const { name, description, price } = req.body;
+    const { name, description, price, stock_count } = req.body;
 
     const validationError = validateProductInput({
       name,
       description,
       price,
+      stock_count,
     });
 
     if (validationError) {
@@ -184,14 +205,16 @@ exports.updateProduct = async (req, res) => {
           name = $1,
           description = $2,
           price = $3,
-          image = $4
-        WHERE id = $5
+          image = $4,
+          stock_count = $5
+        WHERE id = $6
       `,
       [
         String(name).trim(),
         String(description).trim(),
         Number(price),
         image,
+        Number(stock_count),
         id,
       ]
     );

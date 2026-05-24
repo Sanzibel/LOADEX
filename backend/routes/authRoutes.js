@@ -5,14 +5,28 @@ const {
   registerUser,
   loginUser,
   getProfile,
+  getPendingVerifications,
+  updateVerificationStatus,
 } = require("../controllers/authController");
 const verifyToken = require("../middleware/authMiddleware");
+const requireAdmin = require("../middleware/adminMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
-// public routes
-router.post("/register", registerUser);
+router.post("/register", upload.single("idImage"), registerUser);
 router.post("/login", loginUser);
 
-// 🔒 protected route
 router.get("/profile", verifyToken, getProfile);
+router.get(
+  "/verifications/pending",
+  verifyToken,
+  requireAdmin,
+  getPendingVerifications
+);
+router.put(
+  "/verifications/:id",
+  verifyToken,
+  requireAdmin,
+  updateVerificationStatus
+);
 
 module.exports = router;

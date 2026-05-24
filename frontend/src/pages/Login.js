@@ -28,6 +28,10 @@ function Login({ onLogin }) {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.user.role);
+      localStorage.setItem(
+        "verificationStatus",
+        res.data.user.verification_status || "Pending"
+      );
 
       onLogin(res.data.token);
       navigate(

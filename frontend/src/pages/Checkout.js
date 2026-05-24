@@ -9,6 +9,9 @@ const Checkout = () => {
     type: "",
     text: "",
   });
+  const [verificationStatus, setVerificationStatus] = useState(
+    localStorage.getItem("verificationStatus") || "Pending"
+  );
   const navigate = useNavigate();
 
   const [shipping, setShipping] = useState({
@@ -22,6 +25,34 @@ const Checkout = () => {
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(stored);
+
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        if (!token) return;
+
+        const res = await fetch(apiUrl("/api/auth/profile"), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          const nextStatus =
+            data.user?.verification_status || "Pending";
+
+          setVerificationStatus(nextStatus);
+          localStorage.setItem("verificationStatus", nextStatus);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchProfile();
   }, []);
 
   const total = cart.reduce(
@@ -49,6 +80,17 @@ const Checkout = () => {
       setMessage({
         type: "error",
         text: "Your cart is empty.",
+      });
+      return;
+    }
+
+    if (verificationStatus !== "Verified") {
+      setMessage({
+        type: "error",
+        text:
+          verificationStatus === "Declined"
+            ? "Your ID verification was declined. Please contact admin before checkout."
+            : "Your account is pending ID verification. Checkout unlocks after admin approval.",
       });
       return;
     }
@@ -101,6 +143,14 @@ const Checkout = () => {
         {message.text && (
           <div className={`checkout-message ${message.type}`}>
             {message.text}
+          </div>
+        )}
+
+        {verificationStatus !== "Verified" && (
+          <div className="checkout-message warning">
+            {verificationStatus === "Declined"
+              ? "Your ID verification was declined. Please contact admin before checkout."
+              : "Your ID verification is pending. Checkout is disabled until admin approval."}
           </div>
         )}
 
@@ -165,7 +215,11 @@ const Checkout = () => {
             </div>
 
             {/* BUTTON */}
-            <button className="place-order" onClick={handlePlaceOrder}>
+            <button
+              className="place-order"
+              onClick={handlePlaceOrder}
+              disabled={verificationStatus !== "Verified"}
+            >
               Place Order
             </button>
 
@@ -233,6 +287,12 @@ const Checkout = () => {
           background: rgba(255, 0, 110, 0.14);
           border: 1px solid rgba(255, 0, 110, 0.5);
           color: #ff8fbf;
+        }
+
+        .checkout-message.warning {
+          background: rgba(255, 193, 7, 0.12);
+          border: 1px solid rgba(255, 193, 7, 0.45);
+          color: #ffd37a;
         }
 
         .checkout-grid {
@@ -307,6 +367,13 @@ const Checkout = () => {
         .place-order:hover {
           background: #00e5ff;
           box-shadow: 0 0 15px #00e5ff;
+        }
+
+        .place-order:disabled {
+          background: #252b3a;
+          color: #888;
+          cursor: not-allowed;
+          box-shadow: none;
         }
 
         .checkout-right {

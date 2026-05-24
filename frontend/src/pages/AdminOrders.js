@@ -25,7 +25,9 @@ const AdminOrders = () => {
     totalOrders: 0,
     pendingOrders: 0,
     totalUsers: 0,
+    pendingVerifications: 0,
   });
+  const [pendingUsers, setPendingUsers] = useState([]);
 
   const fetchOrders = useCallback(async () => {
 
@@ -89,10 +91,33 @@ const AdminOrders = () => {
     }
   }, []);
 
+  const fetchPendingUsers = useCallback(async () => {
+    try {
+      const res = await fetch(
+        apiUrl("/api/auth/verifications/pending"),
+        {
+          headers: {
+            Authorization:
+              `Bearer ${getToken()}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setPendingUsers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOrders();
     fetchStats();
-  }, [fetchOrders, fetchStats]);
+    fetchPendingUsers();
+  }, [fetchOrders, fetchStats, fetchPendingUsers]);
 
   const fetchOrderDetails = async (orderId) => {
 
@@ -185,6 +210,39 @@ const AdminOrders = () => {
     }
   };
 
+  const updateVerification = async (userId, status) => {
+    try {
+      const res = await fetch(
+        apiUrl(`/api/auth/verifications/${userId}`),
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify({
+            status,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Unable to update verification");
+        return;
+      }
+
+      setError("");
+      fetchPendingUsers();
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+      setError("Unable to update verification");
+    }
+  };
+
   return (
     <div className="admin-page">
 
@@ -217,7 +275,65 @@ const AdminOrders = () => {
             <span>Users</span>
             <strong>{stats.totalUsers}</strong>
           </div>
+          <div className="stat-card">
+            <span>ID Checks</span>
+            <strong>{stats.pendingVerifications || 0}</strong>
+          </div>
         </div>
+
+        <section className="verification-section">
+          <div className="section-heading">
+            <h2>Pending User Verifications</h2>
+            <span>{pendingUsers.length} pending</span>
+          </div>
+
+          {pendingUsers.length === 0 ? (
+            <div className="empty-box">
+              No pending user verifications.
+            </div>
+          ) : (
+            <div className="verification-list">
+              {pendingUsers.map((user) => (
+                <div
+                  className="verification-card"
+                  key={user.id}
+                >
+                  <img
+                    src={user.id_image}
+                    alt={`${user.name} official ID`}
+                  />
+
+                  <div className="verification-info">
+                    <h3>{user.name}</h3>
+                    <p>{user.email}</p>
+                    <small>
+                      Registered {new Date(user.created_at).toLocaleString()}
+                    </small>
+                  </div>
+
+                  <div className="verification-actions">
+                    <button
+                      className="accept-btn"
+                      onClick={() =>
+                        updateVerification(user.id, "Verified")
+                      }
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="decline-btn"
+                      onClick={() =>
+                        updateVerification(user.id, "Declined")
+                      }
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {loading ? (
           <div className="empty-box">
@@ -419,7 +535,7 @@ const AdminOrders = () => {
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           gap: 16px;
           margin-bottom: 28px;
         }
@@ -443,6 +559,95 @@ const AdminOrders = () => {
           color: #00e5ff;
           font-size: 30px;
           text-shadow: 0 0 12px rgba(0,229,255,0.55);
+        }
+
+        .verification-section {
+          margin-bottom: 34px;
+        }
+
+        .section-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+        }
+
+        .section-heading h2 {
+          margin: 0;
+          color: #00e5ff;
+        }
+
+        .section-heading span {
+          color: #aaa;
+          font-size: 13px;
+        }
+
+        .verification-list {
+          display: grid;
+          gap: 16px;
+        }
+
+        .verification-card {
+          display: grid;
+          grid-template-columns: 150px 1fr auto;
+          gap: 18px;
+          align-items: center;
+          padding: 18px;
+          background: #0c0c14;
+          border: 1px solid rgba(0,255,255,0.2);
+          border-radius: 14px;
+        }
+
+        .verification-card img {
+          width: 150px;
+          height: 100px;
+          object-fit: cover;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.1);
+          cursor: zoom-in;
+        }
+
+        .verification-card img:hover {
+          transform: scale(1.8);
+          transform-origin: left center;
+          z-index: 5;
+        }
+
+        .verification-info h3 {
+          margin: 0 0 8px;
+        }
+
+        .verification-info p {
+          margin: 0 0 8px;
+          color: #ccc;
+        }
+
+        .verification-info small {
+          color: #777;
+        }
+
+        .verification-actions {
+          display: flex;
+          gap: 10px;
+        }
+
+        .accept-btn,
+        .decline-btn {
+          border: none;
+          border-radius: 8px;
+          padding: 10px 14px;
+          cursor: pointer;
+          font-weight: bold;
+        }
+
+        .accept-btn {
+          background: #00c2d4;
+          color: black;
+        }
+
+        .decline-btn {
+          background: #ff006e;
+          color: white;
         }
 
         .order-card {

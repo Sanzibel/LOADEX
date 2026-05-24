@@ -37,6 +37,28 @@ exports.createOrder = async (req, res) => {
     const { items, total, shipping } = req.body;
     const userId = req.user.id;
 
+    const userResult = await db.query(
+      `
+        SELECT verification_status
+        FROM loadex_users_v1
+        WHERE id = $1
+      `,
+      [userId]
+    );
+
+    const verificationStatus =
+      userResult[0]?.verification_status || "Pending";
+
+    if (verificationStatus !== "Verified") {
+      return res.status(403).json({
+        success: false,
+        message:
+          verificationStatus === "Declined"
+            ? "Your ID verification was declined. Please contact admin before checking out."
+            : "Your account is still pending ID verification. You can browse products, but checkout is locked until an admin approves your ID.",
+      });
+    }
+
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         message: "Cart is empty",
@@ -65,10 +87,61 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    const calculatedTotal = items.reduce(
-      (sum, item) => sum + Number(item.price) * Number(item.qty),
-      0
+    const productIds = items.map((item) => Number(item.id));
+    const products = await db.query(
+      `
+        SELECT
+          id,
+          name,
+          price,
+          stock_count
+        FROM loadex_products
+        WHERE id = ANY($1::int[])
+      `,
+      [productIds]
     );
+
+    const productMap = new Map(
+      products.map((product) => [
+        Number(product.id),
+        product,
+      ])
+    );
+
+    for (const item of items) {
+      const product = productMap.get(Number(item.id));
+      const qty = Number(item.qty);
+
+      if (!product) {
+        return res.status(400).json({
+          message: `${item.name || "Product"} is no longer available`,
+        });
+      }
+
+      if (Number(product.stock_count) <= 0) {
+        return res.status(400).json({
+          message: `${product.name} is sold out`,
+        });
+      }
+
+      if (qty > Number(product.stock_count)) {
+        return res.status(400).json({
+          message: `Only ${product.stock_count} ${product.name} left in stock`,
+        });
+      }
+
+      if (Number(item.price) !== Number(product.price)) {
+        return res.status(400).json({
+          message: `${product.name} price changed. Please refresh your cart.`,
+        });
+      }
+    }
+
+    const calculatedTotal = items.reduce((sum, item) => {
+      const product = productMap.get(Number(item.id));
+
+      return sum + Number(product.price) * Number(item.qty);
+    }, 0);
 
     if (Math.abs(Number(total) - calculatedTotal) > 0.01) {
       return res.status(400).json({
@@ -105,6 +178,8 @@ exports.createOrder = async (req, res) => {
     const orderId = orderResult[0].id;
 
     for (const item of items) {
+      const product = productMap.get(Number(item.id));
+
       await db.query(
         `
           INSERT INTO order_items (
@@ -119,11 +194,34 @@ exports.createOrder = async (req, res) => {
         [
           orderId,
           item.id,
-          item.name,
-          Number(item.price),
+          product.name,
+          Number(product.price),
           Number(item.qty),
         ]
       );
+
+      const stockResult = await db.query(
+        `
+          UPDATE loadex_products
+          SET
+            stock_count = stock_count - $1,
+            sold_count = sold_count + $1
+          WHERE id = $2
+            AND stock_count >= $1
+          RETURNING id
+        `,
+        [
+          Number(item.qty),
+          item.id,
+        ]
+      );
+
+      if (stockResult.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `${product.name} stock changed. Please refresh your cart.`,
+        });
+      }
     }
 
     res.status(201).json({
@@ -291,7 +389,8 @@ exports.getAdminStats = async (req, res) => {
         (SELECT COUNT(*)::int FROM loadex_products) AS "totalProducts",
         (SELECT COUNT(*)::int FROM orders) AS "totalOrders",
         (SELECT COUNT(*)::int FROM orders WHERE status = 'Pending') AS "pendingOrders",
-        (SELECT COUNT(*)::int FROM loadex_users_v1) AS "totalUsers"
+        (SELECT COUNT(*)::int FROM loadex_users_v1) AS "totalUsers",
+        (SELECT COUNT(*)::int FROM loadex_users_v1 WHERE verification_status = 'Pending' AND role <> 'admin') AS "pendingVerifications"
     `);
 
     res.json(result[0]);
